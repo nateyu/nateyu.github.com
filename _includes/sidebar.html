@@ -1,0 +1,21 @@
+<nav>
+  <a href="/">
+    {% if site.data.theme.social.gravatar %}
+    <img src="http://www.gravatar.com/avatar/{{ site.data.theme.social.gravatar }}?s=200" id="gravatar" alt="My photo"/>
+    {% else %}
+    <img src="/logo.png" id="logo" alt="Blog logo" width="80" />
+    {% endif %}
+  </a>
+
+  <h2>我是 <a href="/">{{ site.data.theme.name }}</a></h2>
+  
+  <div id="bio">
+    <p style="text-align:center">欢迎访问我的个人博客.</p>
+    <p>
+      我是一个懒惰，挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+    </p>
+  </div>
+  <div id="social">
+    {% include social.html %}
+  </div>
+</nav>

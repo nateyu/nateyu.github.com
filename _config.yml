@@ -1,0 +1,9 @@
+# General Jekyll Config
+highlighter: pygments
+markdown: redcarpet
+url: http://nateyu.github.io
+lsi: false
+paginate: 20
+paginate_path: /posts/page/:num
+permalink: /posts/:year/:month/:day/:title
+exclude: [LICENSE, CNAME, README.md, .gitignore, Gemfile, Gemfile.lock]

@@ -24,7 +24,8 @@ email: yudiegui@gmail.com
 tagline: "weak opinions, strongly held"
 
 # Google Analytics key, leave blank to ignore
-google_analytics_key: UA-xxxx-x
+google_analytics_key: 
+baidu_analytics_key: 01179477135d9e37e18df55d2011d072
 
 # Toggle "Postings are my own" disclaimer in footer
 show_disclaimer: true

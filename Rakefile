@@ -29,14 +29,6 @@ task :update do
   # Jekyll::Site.new(Jekyll.configuration({})).process
 end
 
-desc "Preview blogs with jekyll"
-task :preview => [:update] do
-  exec_wrapping {
-    Process.spawn({"OCTOPRESS_ENV"=>"preview"}, "jekyll --auto --server")
-    Process.spawn("compass watch")
-  }
-end
-
 desc "Begin a new post in #{source_dir}/#{posts_dir}"
 task :post, :title do |t, args|
   if args.title
@@ -58,6 +50,7 @@ task :post, :title do |t, args|
     post.puts "date: #{Time.now.strftime('%Y-%m-%d %H:%M')}"
     post.puts "comments: true"
     post.puts "categories: "
+    post.puts "tags: "
     post.puts "---"
   end
 end
@@ -70,6 +63,7 @@ task :push => [:update]do
    puts message
    system "git commit -m \"#{message}\""
    system "git push origin HEAD:source"
+   
    puts 'push deploy branch'
    if exist_branch?(deploy_branch)
       ptree = `git show-ref  -s refs/heads/#{deploy_branch}`

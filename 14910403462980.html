@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Jenkins与Gitlab集成 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='other.html'>other</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Jenkins与Gitlab集成</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2016/1/15">2016/1/15</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>Jenkins和Gitlab集成主要目的是将Jenkins作为Gitlab持续集成工具，版本库有提交或者合并时能够触发Jenkins自动build</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">版本要求</h3>
+
+<p>Jenkins集成Gitlab是用过gitlab-plugin来实现，因此对jenkins和gitlab有版本要求</p>
+
+<p>jenkins &gt; 1.568 <br/>
+  gitlab 7.14.x 或者 8.1.x，不支持8.0.x</p>
+
+<h3 id="toc_1">gitlab-plugin介绍</h3>
+
+<p>插件为jekins提供了gitlab-webhook以及gitlab-ci相应的功能，相关的接口如下：</p>
+
+<pre><code>/project/PROJECT_NAME/builds/COMMIT_SHA1/status.json 返回COMMIT_SHA1版本号对应的build状态，在gitlab merge/request页面显示
+/project/PROJECT_NAME/builds/status.png?ref=BRANCH_NAME 显示分支build状态的图标，&quot;sucess&quot;, &quot;pending&quot;, &quot;failed&quot;
+/project/PROJECT_NAME/builds/status.png?sha1=COMMIT_SHA1 返回COMMIT_SHA1的build状态图标
+/project/PROJECT_NAME/builds/COMMIT_SHA1 跳转到对应COMMIT_SHA1版本的build状态页面，
+/project/PROJECT_NAME/commits/COMMIT_SHA1 跳转到对应COMMIT_SHA1版本的build状态页面，
+/project/PROJECT_NAME?ref=BRANCH_NAME 跳转到对应BRANCH_NAME版本的build状态页面，
+/project/PROJECT_NAME 触发jenkins自动build的接口，要传递必要的参数
+</code></pre>
+
+<p>插件内置build参数, 可以在初始化构建参数时添加：</p>
+
+<pre><code>gitlabSourceBranch merge/request的源分支
+gitlabTargetBranch  merge/request的目标分支
+gitlabSourceRepoURL
+gitlabSourceRepoName
+gitlabMergeRequestTitle
+gitlabMergeRequestId
+gitlabMergeRequestAssignee
+gitlabUserName
+gitlabUserEmail
+gitlabBranch Gitlab push代码的分支可以用于shell script
+gitlabActionType Gitlab操作类型PUSH或MERGE可以用于shell script
+</code></pre>
+
+<p>以上参数在gitlab 触发webhooks的时候会传递过来，同时我们也可以在构建jekins任务时设置默认值</p>
+
+<h3 id="toc_2">配置jenkins</h3>
+
+<p>基本设置<br/><br/>
+  1.升级jenkins, 目前使用的1.47版本会遇到克隆版本会报错，升级到最新1.643可以配置成功<br/><br/>
+  2.安装gitlab-plugin插件，同时会一同安装插件依赖git-client和git<br/><br/>
+  3.为jenkins生成一个能访问gitlab的ssh密钥对，切换到jenkins用户将密钥对至于.ssh目录，其中公钥将用于gitlab设置deploy key   </p>
+
+<p>添加构建项目<br/><br/>
+  4.添加构建项目(构建一个自由风格的软件项目)， 设置项目名<br/><br/>
+  5.在源码管理部分：      </p>
+
+<pre><code>选择git      
+  Repository URL设置gitlab项目地址，如：git@your.gitlab.server:group/repo_name.git      
+ 高级设置, Name设置为origin      
+ Branch Specifier： origin/${gitlabSourceBranch}      
+ 源码库浏览器：gitlab      
+   URL: http://your.gitlab.server    
+   Version: gitlab版本号，如：1.11.0    
+ Additional Behaviours：    
+   点击&#39;Add&#39;, 选择‘Merge before build’    
+   Name of the repository：origin    
+   Branch to merge to： ${gitlabTargetBranch}    
+ 构建触发器：    
+   勾选&#39;Build when a change is pushed to GitLab&#39;    
+
+ 保存设置    
+</code></pre>
+
+<p>6.设置gitlab回调接口，用于在build完成将结果通知到gitlab   </p>
+
+<pre><code>进入全局系统管理    
+
+  Gitlab部分    
+    Gitlab host URL: http://your.gitlab.server    
+    API Token: 设置gitlab的api访问token（admin用户才有）    
+</code></pre>
+
+<h3 id="toc_3">Gitlab配置</h3>
+
+<p>Gitlab相对于jenkins配置要简单很多，主要是为jenkins要访问的项目配置gitlab-ci以及webhook</p>
+
+<p>1.设置项目deploy key, 将jenkins用户目录下面的公钥设置在这里即可<br/><br/>
+  2.设置gitlab ci  </p>
+
+<pre><code>在项目设置里，点击&#39;Services&#39;
+点击&#39;GitLab CI&#39;， 勾选&#39;Active&#39;
+Trigger栏，勾选&#39;Push events&#39;和&#39;Tag push events&#39;
+Token， 随便填写一个字符串
+Project url：填写jenkins api地址，http://JENKINS_URL/project/PROJECT_NAME
+</code></pre>
+
+<p>3.设置gitlab webhook</p>
+
+<pre><code> 点击&#39;Web hooks&#39;, 输入地址：http://JENKINS_URL/project/PROJECT_NAME
+ 然后勾选&#39;Merge Request event&#39;
+</code></pre>
+
+<p>注意，gitlab ci和webhook都要设置才行</p>
+
+<p>以上设置完成之后，往gitlab里push代码或者建立Merge Request就会自动build相应的jekins任务了</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14913797670808.html" title="Previous Post: Jenkins集成Ruby on Rails单元测试">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14913797760241.html" title="Next Post: Linux的文件链接">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

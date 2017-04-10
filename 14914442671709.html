@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         网页字体 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='html_css.html'>html/css</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">网页字体</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/7/19">2014/7/19</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <blockquote>
+<p>一直对网页字体不敏感，今天重要看到一篇不错的<a href="http://blog.jobbole.com/73722/">文章</a>，做个摘要。</p>
+
+<span id="more"></span><!-- more -->
+</blockquote>
+
+<h3 id="toc_0">操作系统预装的字体</h3>
+
+<p><strong>Windows操作系统：</strong></p>
+
+<ul>
+<li>黑体：SimHei</li>
+<li>宋体：SimSun</li>
+<li>新宋体：NSimSun</li>
+<li>仿宋：FangSong</li>
+<li>楷体：KaiTi</li>
+<li>仿宋GB2312：FangSongGB2312</li>
+<li>楷体GB2312：KaiTiGB2312</li>
+<li>微软雅黑：Microsoft YaHei （Windows 7开始提供）</li>
+</ul>
+
+<p><strong>OS X操作系统：</strong></p>
+
+<ul>
+<li>冬青黑体: Hiragino Sans GB （SNOW LEOPARD开始提供）</li>
+<li>华文细黑：STHeiti Light （又名STXihei）</li>
+<li>华文黑体：STHeiti</li>
+<li>华文楷体：STKaiti</li>
+<li>华文宋体：STSong</li>
+<li>华文仿宋：STFangsong</li>
+</ul>
+
+<p>如果用户装了MicroSoft Office，还会多出一些字体。</p>
+
+<ul>
+<li>隶书：LiSu</li>
+<li>幼圆：YouYuan</li>
+<li>华文细黑：STXihei</li>
+<li>华文楷体：STKaiti</li>
+<li>华文宋体：STSong</li>
+<li>华文中宋：STZhongsong</li>
+<li>华文仿宋：STFangsong</li>
+<li>方正舒体：FZShuTi</li>
+<li>方正姚体：FZYaoti</li>
+<li>华文彩云：STCaiyun</li>
+<li>华文琥珀：STHupo</li>
+<li>华文隶书：STLiti</li>
+<li>华文行楷：STXingkai</li>
+<li>华文新魏：STXinwei</li>
+</ul>
+
+<h3 id="toc_1">英文字体优先于中文字体</h3>
+
+<p>font-family应该优先指定英文字体，然后再指定中文字体。否则，中文字体所包含的英文字母，会取代英文字体, 很丑陋。<br/><br/>
+为了保证兼容性，中文字体的中文名称和英文名称，应该都写入font-family。比如，”微软雅黑”的英文名称是Microsoft YaHei。<br/><br/>
+此外，中文字体的中文名称，以及由多个单词组成的英文名称，应该放在双引号内。</p>
+
+<h3 id="toc_2">Windows平台和Mac平台</h3>
+
+<p>由于Windows和Mac的中文字体没有交叉，所以应该同时为两个平台指定字体。<br/><br/>
+常见的做法是，Windows平台指定”微软雅黑”（Microsoft YaHei），Mac平台指定”华文细黑”（STXihei）。</p>
+
+<h3 id="toc_3">衬线体和无衬线体</h3>
+
+<blockquote>
+<p>所谓”衬线体”（Serif），指的是笔画的末端带有衬线的字体。</p>
+</blockquote>
+
+<p>衬线体装饰性强，往往用于标题；无衬线体清晰度好，往往用于正文。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914442350852.html" title="Previous Post: Git中的撤销操作">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914443335799.html" title="Next Post: Web响应式设计笔记整理">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

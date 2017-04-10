@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Swift中的闭包 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='ios.html'>ios</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Swift中的闭包</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/9/21">2014/9/21</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>闭包的概念来自函数编程，很多语言都支持。Swift对闭包的定义可能是最明确易懂的(与js和ruby比较，哈哈)，来看看官方定义。</p>
+
+<blockquote>
+<p>闭包是自包含的函数代码块，可以在代码中被传递和使用。<br/>
+闭包可以捕获和存储其所在上下文中任意常量和变量的引用。 这就是所谓的闭合并包裹着这些常量和变量，俗称闭包。</p>
+</blockquote>
+
+<p>非常明确的指出闭包的实质，一、闭包是可以被传递的代码块，二、闭包可以访问所处上下文(context)中的变量和常量。这里请记住一个词上下文(context), 对于闭包理解十分重要。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">简述一下什么是下上下文环境</h3>
+
+<p>context这个词在编程语言中是一个比较标准的专业术语，每种语言的文法必须要明确定义的。简单说，当我们函数调用时都会有个执行环境，这个执行环境主要是绑定相关的变量，对象等等。换句话说执行环境是伴随这当前的函数生命周期的一些对象和变量，当函数生命周期结束部分对象和变量随之消失。而闭包则可以在函数生命周期以外访问这些资源。</p>
+
+<h3 id="toc_1">Swift中闭包形式</h3>
+
+<p>1 全局函数是一个有名字但不会捕获任何值的闭包<br/><br/>
+2 嵌套函数是一个有名字并可以捕获其封闭函数域内值的闭包<br/><br/>
+3 闭包表达式是一个利用轻量级语法所写的可以捕获其上下文中变量或常量值的匿名闭包   </p>
+
+<p><em>闭包表达式语法</em>   </p>
+
+<pre><code>{ (parameters) -&gt; returnType in
+    statements
+}
+</code></pre>
+
+<p>用一对大括({})号包含，指定参数和返回值。</p>
+
+<p><em>来自官的举例</em>   </p>
+
+<p>对数组排序<br/><br/>
+let names = [&quot;Chris&quot;, &quot;Alex&quot;, &quot;Ewa&quot;, &quot;Barry&quot;, &quot;Daniella&quot;]   </p>
+
+<p>1、标准的使用，闭包函数</p>
+
+<pre><code>func backwards(s1: String, s2: String) -&gt; Bool {
+    return s1 &gt; s2
+}
+var reversed = sort(names, backwards)
+</code></pre>
+
+<p>2、使用闭包表达式</p>
+
+<pre><code>reversed = sort(names, { (s1: String, s2: String) -&gt; Bool in
+    return s1 &gt; s2
+    })
+
+</code></pre>
+
+<p>3、自动推断类型参数类型和返回值</p>
+
+<pre><code>reversed = sort(names, { s1, s2 in return s1 &gt; s2 } ) //参数类型和返回类型省略
+</code></pre>
+
+<p>4、单表达式闭包隐式返回</p>
+
+<pre><code>reversed = sort(names, { s1, s2 in s1 &gt; s2 } ) //省略return
+</code></pre>
+
+<p>5、参数名称缩写</p>
+
+<pre><code>reversed = sort(names, { $0 &gt; $1 } ) //通过$0,$1,$2来顺序调用闭包的参数
+</code></pre>
+
+<p>6、运算符函数<br/>
+Swift 的String类型定义了关于大于号 (&gt;) 的字符串实现，其作为一个函数接受两个String类型的参数并返回Bool类型的值。因此可以更简洁的写为</p>
+
+<pre><code>reversed = sort(names, &gt;)
+</code></pre>
+
+<p>这个有点复杂了，需要进一步了解运算符函数相关内容了。</p>
+
+<p><em>尾随闭包</em><br/><br/>
+尾随闭包是另外一种闭包的调用方式，当你将闭包作为最后一个函数传递时，可以将其放在函数参数列表以外。还是以sort为例：</p>
+
+<p>正常使用</p>
+
+<pre><code>var reversed = sort(names, backwards)
+reversed = sort(names, { $0 &gt; $1 } )
+</code></pre>
+
+<p>尾随闭包，闭包体位于函数调用后面</p>
+
+<pre><code>reversed = sort(names) { $0 &gt; $1 }
+</code></pre>
+
+<h3 id="toc_2">比较swift, ruby和javascript中的闭包</h3>
+
+<p>我们看几个不同语言中的例子来看看什么是闭包。</p>
+
+<p>Javascript中闭包主要是通过函数传递或者嵌套定义来实现</p>
+
+<pre><code>function a() {
+  var counter = 1;
+  renturn function b() {
+    return counter ++;
+  }
+}
+
+c = a();
+c() // counter为2, 一般情况执行完a()之后，counter就会被回收，但是这里因为闭包b将它带出了作用域
+</code></pre>
+
+<p>Ruby不支持嵌套定义函数，闭包是通过Proc来实现</p>
+
+<pre><code>def a
+  counter = 1
+  return Proc.new { counter += 1 }
+end
+
+c = a
+c.call  # counter为2
+</code></pre>
+
+<p>ios中闭包</p>
+
+<pre><code>
+func a() -&gt; () -&gt; Int {
+    var counter = 1;
+    func b() -&gt; Int {
+      return ++counter
+    }
+    return b
+}
+
+var c = a()
+c() //counter为2
+</code></pre>
+
+<p>通过从上面例子我们可以看出，1. 要形成闭包首先得支持代码块传递，2. 闭包的行为是能够将变量带出在当前执行上下文环境以外，也就是本身作用域之外还能继续访问。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914440114235.html" title="Previous Post: 记一枚不错的Gem：wechat-rails">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914440715103.html" title="Next Post: rails的中的MIME类型">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

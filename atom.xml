@@ -1,0 +1,1692 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[余瓞归的博客]]></title>
+  <link href="./atom.xml" rel="self"/>
+  <link href="./"/>
+  <updated>2017-04-10T18:24:28+08:00</updated>
+  <id>./</id>
+  <author>
+    <name><![CDATA[]]></name>
+    
+  </author>
+  <generator uri="http://www.mweb.im">MWeb</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[春天到了，最喜欢灿烂的油菜花]]></title>
+    <link href="./14915616638277.html"/>
+    <updated>2017-04-07T18:41:03+08:00</updated>
+    <id>./14915616638277.html</id>
+    <content type="html"><![CDATA[
+<p><img src="media/14915616638277/14918195442429.jpg" alt=""/></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Jenkins集成Ruby on Rails单元测试]]></title>
+    <link href="./14913797670808.html"/>
+    <updated>2017-04-05T16:09:27+08:00</updated>
+    <id>./14913797670808.html</id>
+    <content type="html"><![CDATA[
+<p>Jenkins集成Rails单元测试关键是安装ruby环境，jenkins可以通过插件安装ruby运行环境，但是安装的ruby版本是j-ruby，和我们使用的标准ruby有一定区别不推荐安装。<br/>
+我们需要通过ruby版本控制工具安装rvm或者rbenv安装需要的ruby版本。这里选择rvm来安装。</p>
+
+<span id="more"></span><!-- more -->
+
+<h2 id="toc_0">安装rvm</h2>
+
+<p>我们只需要为jekins用户安装rvm, 不推荐安装全局的， 运行下面的命令安装：</p>
+
+<pre><code> sudo su -lp jenkins
+ gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+ curl -sSL https://get.rvm.io | bash -s stable
+ echo &#39;[[ -s &quot;$HOME/.rvm/scripts/rvm&quot; ]] &amp;&amp; source &quot;$HOME/.rvm/scripts/rvm&quot;&#39; &gt;&gt; ~/.bash_profile
+</code></pre>
+
+<p>测试rvm是否安装成功</p>
+
+<pre><code>  type rvm | head -1 # 返回 &#39;rvm is a function&#39; 表示安装成功
+</code></pre>
+
+<p>最后，配置一些必要的参数</p>
+
+<pre><code>  rvm_install_on_use_flag=1
+  rvm_project_rvmrc=1
+  rvm_gemset_create_on_use_flag=1
+</code></pre>
+
+<h3 id="toc_1">配置jenkins为rails项目添加执行脚本</h3>
+
+<p>添加一个普通的jenkins任务，在&#39;Execute Shell Script&#39;部分做如下设置：</p>
+
+<pre><code>    #!/bin/bash
+    source &quot;$HOME/.rvm/scripts/rvm&quot;
+    # Use the correct ruby
+    [[ -s &quot;.rvmrc&quot; ]] &amp;&amp; source .rvmrc
+    # Set &quot;fail on error&quot; in bash
+    set -e
+    # Do any setup
+    # e.g. possibly do &#39;rake db:migrate db:test:prepare&#39; here
+    bundle install
+    rake db:test:prepare
+    # Finally, run your tests
+    rake
+</code></pre>
+
+<h3 id="toc_2">为rails项目配置数据库</h3>
+
+<p>如果之前没有为rails项目配置数据库，上面的脚本执行build会出错，我们可以在workspace下面设置数据库。</p>
+
+<pre><code>    sudo su -lp jenkins
+    cd /var/lib/jenkins/workspace/Project_name
+    vi config/database.yml #设置你的development和test数据库
+</code></pre>
+
+<p>上面步骤完成之后，就可以成功build一个ROR项目，执行包括单元测试和其他的各种rake任务了。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Jenkins与Gitlab集成]]></title>
+    <link href="./14910403462980.html"/>
+    <updated>2017-04-01T17:52:26+08:00</updated>
+    <id>./14910403462980.html</id>
+    <content type="html"><![CDATA[
+<p>Jenkins和Gitlab集成主要目的是将Jenkins作为Gitlab持续集成工具，版本库有提交或者合并时能够触发Jenkins自动build</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">版本要求</h3>
+
+<p>Jenkins集成Gitlab是用过gitlab-plugin来实现，因此对jenkins和gitlab有版本要求</p>
+
+<p>jenkins &gt; 1.568 <br/>
+  gitlab 7.14.x 或者 8.1.x，不支持8.0.x</p>
+
+<h3 id="toc_1">gitlab-plugin介绍</h3>
+
+<p>插件为jekins提供了gitlab-webhook以及gitlab-ci相应的功能，相关的接口如下：</p>
+
+<pre><code>/project/PROJECT_NAME/builds/COMMIT_SHA1/status.json 返回COMMIT_SHA1版本号对应的build状态，在gitlab merge/request页面显示
+/project/PROJECT_NAME/builds/status.png?ref=BRANCH_NAME 显示分支build状态的图标，&quot;sucess&quot;, &quot;pending&quot;, &quot;failed&quot;
+/project/PROJECT_NAME/builds/status.png?sha1=COMMIT_SHA1 返回COMMIT_SHA1的build状态图标
+/project/PROJECT_NAME/builds/COMMIT_SHA1 跳转到对应COMMIT_SHA1版本的build状态页面，
+/project/PROJECT_NAME/commits/COMMIT_SHA1 跳转到对应COMMIT_SHA1版本的build状态页面，
+/project/PROJECT_NAME?ref=BRANCH_NAME 跳转到对应BRANCH_NAME版本的build状态页面，
+/project/PROJECT_NAME 触发jenkins自动build的接口，要传递必要的参数
+</code></pre>
+
+<p>插件内置build参数, 可以在初始化构建参数时添加：</p>
+
+<pre><code>gitlabSourceBranch merge/request的源分支
+gitlabTargetBranch  merge/request的目标分支
+gitlabSourceRepoURL
+gitlabSourceRepoName
+gitlabMergeRequestTitle
+gitlabMergeRequestId
+gitlabMergeRequestAssignee
+gitlabUserName
+gitlabUserEmail
+gitlabBranch Gitlab push代码的分支可以用于shell script
+gitlabActionType Gitlab操作类型PUSH或MERGE可以用于shell script
+</code></pre>
+
+<p>以上参数在gitlab 触发webhooks的时候会传递过来，同时我们也可以在构建jekins任务时设置默认值</p>
+
+<h3 id="toc_2">配置jenkins</h3>
+
+<p>基本设置<br/><br/>
+  1.升级jenkins, 目前使用的1.47版本会遇到克隆版本会报错，升级到最新1.643可以配置成功<br/><br/>
+  2.安装gitlab-plugin插件，同时会一同安装插件依赖git-client和git<br/><br/>
+  3.为jenkins生成一个能访问gitlab的ssh密钥对，切换到jenkins用户将密钥对至于.ssh目录，其中公钥将用于gitlab设置deploy key   </p>
+
+<p>添加构建项目<br/><br/>
+  4.添加构建项目(构建一个自由风格的软件项目)， 设置项目名<br/><br/>
+  5.在源码管理部分：      </p>
+
+<pre><code>选择git      
+  Repository URL设置gitlab项目地址，如：git@your.gitlab.server:group/repo_name.git      
+ 高级设置, Name设置为origin      
+ Branch Specifier： origin/${gitlabSourceBranch}      
+ 源码库浏览器：gitlab      
+   URL: http://your.gitlab.server    
+   Version: gitlab版本号，如：1.11.0    
+ Additional Behaviours：    
+   点击&#39;Add&#39;, 选择‘Merge before build’    
+   Name of the repository：origin    
+   Branch to merge to： ${gitlabTargetBranch}    
+ 构建触发器：    
+   勾选&#39;Build when a change is pushed to GitLab&#39;    
+
+ 保存设置    
+</code></pre>
+
+<p>6.设置gitlab回调接口，用于在build完成将结果通知到gitlab   </p>
+
+<pre><code>进入全局系统管理    
+
+  Gitlab部分    
+    Gitlab host URL: http://your.gitlab.server    
+    API Token: 设置gitlab的api访问token（admin用户才有）    
+</code></pre>
+
+<h3 id="toc_3">Gitlab配置</h3>
+
+<p>Gitlab相对于jenkins配置要简单很多，主要是为jenkins要访问的项目配置gitlab-ci以及webhook</p>
+
+<p>1.设置项目deploy key, 将jenkins用户目录下面的公钥设置在这里即可<br/><br/>
+  2.设置gitlab ci  </p>
+
+<pre><code>在项目设置里，点击&#39;Services&#39;
+点击&#39;GitLab CI&#39;， 勾选&#39;Active&#39;
+Trigger栏，勾选&#39;Push events&#39;和&#39;Tag push events&#39;
+Token， 随便填写一个字符串
+Project url：填写jenkins api地址，http://JENKINS_URL/project/PROJECT_NAME
+</code></pre>
+
+<p>3.设置gitlab webhook</p>
+
+<pre><code> 点击&#39;Web hooks&#39;, 输入地址：http://JENKINS_URL/project/PROJECT_NAME
+ 然后勾选&#39;Merge Request event&#39;
+</code></pre>
+
+<p>注意，gitlab ci和webhook都要设置才行</p>
+
+<p>以上设置完成之后，往gitlab里push代码或者建立Merge Request就会自动build相应的jekins任务了</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Linux的文件链接]]></title>
+    <link href="./14913797760241.html"/>
+    <updated>2017-04-05T16:09:36+08:00</updated>
+    <id>./14913797760241.html</id>
+    <content type="html"><![CDATA[
+<p>链接Linux文件系统中非常重要的一个概念，在这里探讨Linux文件系统中的硬链接和软连接，以帮助我们更好的理解和正确使用硬链接和软连接。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">什么是Inode？</h3>
+
+<p>涉及到文件相关知识，indoe必须了解。文件系统中的索引节点index node 又称 inode。所有文件都有文件名与数据，linux中称之为用户数据 (user data) 与元数据 (metadata)。用户数据也可以称之为文件数据块 (data block)记录文件真实内容的地方，而元数据则是文件的附加属性，如文件大小、创建时间、所有者等信息；inode也是元数据的一部分，在linux中inode是文件的唯一标识而非文件名，系统或程序通过 inode 号寻找正确的文件数据块。而文件名只是为了方便人们记忆和使用。</p>
+
+<p>Inode示意图：<br/>
+<img src="media/14913797760241/inode01.jpg" alt="Inode示意图"/></p>
+
+<h3 id="toc_1">Linux一切皆为文件</h3>
+
+<p>Linux中为解决信息能独立于进程之外被长期存储引入了文件，文件作为进程创建信息的逻辑单元可被多个进程并发使用，磁盘上的文本与图像、鼠标与键盘等输入设备及网络交互等 I/O 操作设计了一组通用 API，使他们被处理时均可统一使用字节流方式。也就是说， 系统中除进程之外的一切皆是文件！</p>
+
+<h3 id="toc_2">硬链接与软链接</h3>
+
+<p>有时候我们的文件需要共享不可能每个要用的地方都拷贝一份，链接就是为了解决这个问题。在Linux中链接分为硬链接(hard link)和软链接(soft link), 创建链接的方法为：</p>
+
+<p>硬链接</p>
+
+<pre><code>  link file_a file_b
+  ln file_a file_b
+</code></pre>
+
+<p>软链接</p>
+
+<pre><code>  link -s file_a file_b
+  ln -s file_a file_b
+</code></pre>
+
+<p>那么，硬链接和软连接有什么区别呢？</p>
+
+<p>硬链接可以理解为对一个inode取多个不同的别名，如果一个inode对应多个文件名那么这个文件之间就是硬链接。通俗讲，硬链接是一个文件的别名，他们具有相同的inode号。<br/><br/>
+软链接*是一个普通的文件，只是数据内容存放的是指向另一文件的路径名。它有着自己的 inode 号以及用户数据块。</p>
+
+<p>硬链接和软连接示意图：<br/>
+<img src="media/14913797760241/inode02.jpg" alt="硬链接和软连接示意图"/></p>
+
+<p>硬链接存在以下几点特性：   </p>
+
+<ol>
+<li>文件有相同的 inode 和数据内容；</li>
+<li>只能对已存在的文件进行创建；<br/></li>
+<li>不能交叉文件系统进行硬链接的创建，例如，nfs和ext3；<br/></li>
+<li>不能对目录进行创建，只可对文件创建；<br/></li>
+<li>删除一个硬链接文件并不影响其他有相同 inode 号的文件。<br/></li>
+</ol>
+
+<p>软链接的特性：  </p>
+
+<ol>
+<li>软链接有自己的文件属性及权限等；<br/></li>
+<li>可对不存在的文件或目录创建软链接；<br/></li>
+<li>软链接可交叉文件系统；<br/></li>
+<li>软链接可对文件或目录创建；<br/></li>
+<li>创建软链接时，链接计数不会增加；<br/></li>
+<li>删除软链接并不影响被指向的文件，但若被指向的原文件被删除，链接失效，但是原文件重新创建之后软链接又可以继续使用。<br/></li>
+</ol>
+
+<p>以上就是硬链接和软链接的相同点和区别，可以看出导致这些不同的根本原因是软连接是一个独立的文件而硬链接只是一个别名。所以，我们在使用的时候也要区别对待。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[为什么你的代码如此难以理解]]></title>
+    <link href="./14913797809069.html"/>
+    <updated>2017-04-05T16:09:40+08:00</updated>
+    <id>./14913797809069.html</id>
+    <content type="html"><![CDATA[
+<p>无意间读了一篇博客<a href="https://medium.com/on-coding/why-your-code-is-so-hard-to-understand-83057c115a2b">《Why your code is so hard to understand》</a> 恰好最近遇到这些问题，引起了一些思考和共鸣。作为工程师你是如何看待代码的好与坏？该文章中提到的几点我觉得特别有道理，如，过度复杂的心智模型(overly complex mental models)，从语义模型到代码的糟糕转化(poor translation of semantic models into code)和隐晦的用法(obscured usage)等等。今天我结合自己的工作谈谈看法。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">过度复杂的心智模型</h3>
+
+<p>说到模型，程序员最熟悉不过了，一个功能完成往往要经历很多个模型的建模，但是这里心智模型(mental model)估计大家很少遇到。简单的说就是根据已有的知识和经验产生对事物的主观认识，从而形成一个对事物运行发展的预测。通俗一点，你‘希望’事物如何发展，这个不是一个心智模型，但是你‘认为’事物将如何发展，这个就是你的心智模型。因此，拥有一个好的心智模型将会对事物的发展做出准确的判断。我们通常说‘眼光好’，‘有远见’，‘运筹帷幄之中，决胜千里之外’，就是形容心智模型比常人精确的人。详见<a href="http://baike.baidu.com/view/2333986.htm?fr=aladdin">百度百科</a>解释。</p>
+
+<p>对于我们编写代码心智模型是你对需求的第一认知，举例说明一下，例如我们需要实现一个用户登录功能，你最先想到的是什么？你第一反应就是输入用户名和密码，校验密码正确以后保存用户状态，没错，这就是你的心智模型。想过没有，对于一个第一次接触互联网的人来说他认为用户登录又该是什么样的呢？而为什么当你很开心的进入编码时，另外一个程序员会告诉你要限制用户密码输错的次数，同事密码不要明文存在数据库和日志中，而你完全没有想到这些？这些就是每一个人的心智模型不一样，导致的不一样的结果。</p>
+
+<p>那么，怎样才能让我们的心智模型足够精准呢？</p>
+
+<p>我认为两点很重要：</p>
+
+<ol>
+<li>不断的完善自己的知识结构。我们看不到过苹果的抛物线，但是一个学习过牛顿定律的高中生很快就会在脑海中推断出抛物线形状。</li>
+<li>着手实现之前多和身边的人讨论。这是一个自我修正很弥补的过程，站在众人的肩膀上或者三人行必有我师，无论你怎么说都行。</li>
+</ol>
+
+<p>心智模型是我们实现某项事情的最先的一步，但是又会受到以往的经验和获得的信息的影响，所以我们要尽可能的让我们的心智模型更加精准，让我们变得更有远见，眼光更好。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[提高你水平git命令]]></title>
+    <link href="./14913797844730.html"/>
+    <updated>2017-04-05T16:09:44+08:00</updated>
+    <id>./14913797844730.html</id>
+    <content type="html"><![CDATA[
+<p>我们在使用Git常用的add, commit和merge等命令来处理我们日常的工作。本文介绍几个不常用，但是能给你带来极大的效率提高同时也能让你Git水平提高一个档次。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">git blame [file_name]</h3>
+
+<p>查看当前file_name文件中的每一行的修改记录。这个在我们想知道某一行是由谁最后一次修改时特别有用, 当你代码出了问题可以快速揪出那个坑人同伴。实用指数5星。</p>
+
+<p>{% highlight ruby linenos %}</p>
+
+<p>git blame Gemfile</p>
+
+<p><sup>0a57942</sup> (rubyrock      2012-07-31 09:46:47 +0800  1) source &#39;<a href="http://ruby.taobao.org">http://ruby.taobao.org</a>&#39;<br/>
+0f727cfd (ShiningRay    2014-05-16 14:59:10 +0800  2) source &#39;<a href="http://boohee:boohee0690@gems.boohee.cn">http://boohee:boohee0690@gems.boohee.cn</a>&#39;<br/>
+<sup>0a57942</sup> (rubyrock      2012-07-31 09:46:47 +0800  3) <br/>
+3556c391 (vincent       2013-10-16 19:13:20 +0800  4) gem &#39;rails&#39;, &#39;3.2.14&#39;<br/>
+<sup>0a57942</sup> (rubyrock      2012-07-31 09:46:47 +0800  5) gem &#39;mysql2&#39;<br/>
+ec26bb30 (zhouguangming 2013-01-04 17:23:54 +0800  6) gem &#39;sqlite3&#39;<br/>
+<sup>0a57942</sup> (rubyrock      2012-07-31 09:46:47 +0800  7) <br/>
+2421794e (vincent       2013-10-17 14:55:53 +0800  8) # Sunspot. Full-text search engine<br/>
+<sup>0a57942</sup> (rubyrock      2012-07-31 09:46:47 +0800  9) gem &#39;sunspot_rails&#39;<br/>
+d4327102 (zhouguangming 2012-07-31 08:43:59 +0800 10) gem &#39;sunspot_solr&#39;, &#39;1.3.2&#39;<br/>
+45ec2a81 (vincent       2014-09-10 23:35:53 +0800 11) gem &#39;progress_bar&#39;, require: false</p>
+
+<p>....</p>
+
+<p>{% endhighlight %}</p>
+
+<h3 id="toc_1">git log --oneline, --graph, --all</h3>
+
+<p>我回顾历史时候常用git log。这个是按照提交顺序来排列显示你一些基本信息，你可以试试添加以下几个参数：</p>
+
+<p>--oneline, 以极简的形式只显示commit的hash号和message<br/><br/>
+--graph, 以图形树显示历史，SourceTree控们试着换换口味啦<br/><br/>
+--all, 显示全部分支历史，不止当前分支哦   </p>
+
+<p>最后，以上三个可以一起组合使用。</p>
+
+<pre><code class="language-ruby">
+* 64bb1b1 清理掉ifood星级计算和星级标签中对ifood_menu_materials和ifood_upload_menu_materials的关联
+* bb9d626 去掉ifood model中ifood_menu_material, ifood_upload_menu_materials关联
+* 8527d02 修改ifood_menu_material, ifood_upload_material
+| * 2f4ba29 导入food_meal数据
+| * 470322e Refactor: meal_time to meals_order, meal_kind to meals_kind.
+| * 83afd02 增加 food_meal，用于存储食物的餐别meal_time和餐类 meal_kind.
+| *   37a05a1 Merge branch &#39;master&#39; of git.boohee.cn:ruby/ifood
+| |\  
+| | | *   ba30fa8 WIP on hotfix/remove-duplicated-models: 26f481d Merge branch &#39;hotfix/remove-duplicated-models&#39; of git.
+| | | |\  
+| |_|/ /  
+|/| | |   
+| | | * 211cda6 index on hotfix/remove-duplicated-models: 26f481d Merge branch &#39;hotfix/remove-duplicated-models&#39; of git.
+| |_|/  
+|/| |   
+* | |   26f481d Merge branch &#39;hotfix/remove-duplicated-models&#39; of git.boohee.cn:ruby/ifood into hotfix/remove-duplicated
+|\ \ \  
+| * | | 4798136 移除IfoodMenuMaterial关联
+* | | | 567d5e8 移除IfoodMenuMaterial关联
+|/ / /  
+* | | b7ca53f remove binding.pry in qa
+* | | a9bb314 Remove IFoodUnit
+* | |   65a3fc5 Merge branch &#39;master&#39; of git.boohee.cn:ruby/ifood into hotfix/remove-duplicated-models
+|\ \ \  
+| | |/  
+| |/|   
+| * |   2d60cef Merge branch &#39;master&#39; of git.boohee.cn:ruby/ifood
+| |\ \  
+| * | | 7950470 Update new relic licence key
+:
+
+</code></pre>
+
+<h3 id="toc_2">git reflog</h3>
+
+<p>有时候我们迫不得已使用了git reset --hard，然后你马上意识到你丢失所有的提交。如果你还想在看看怎么办呢？那就使用git reflog吧。请记住Git是不会丢失任何一个commit信息的。</p>
+
+<h3 id="toc_3">git add -p [file_name]</h3>
+
+<p>设想一下，我们为一个文件写了好几个方法。但是有的还没有完全写好，我们只想提交已经写好的部分。怎么办？用git add -p filename, 可以互交是的提交一个文件的部分改动。</p>
+
+<p>同时还有git add -i 也是互交试添加缓存，很好实用的。</p>
+
+<h3 id="toc_4">git rebase -i HEAD~[number_of_commits]</h3>
+
+<p>有没有想过一个功能可能存在多个提交，在最后上线前我们想这多个commit合并成一个。那就用rebase吧。</p>
+
+<pre><code>git rebase -i HEAD~4
+</code></pre>
+
+<p>将从HEAD之前的4次提交合并成一个</p>
+
+<h3 id="toc_5">git fsck --lost-found</h3>
+
+<p>有些时候我们的commit可能没有任何的分支名或者tag指向它，到时我们查看历史记录是找不到塔，造成丢失commit的假象。我们可以用git fsck --lost-found快速找回。</p>
+
+<pre><code>git fsck --lost-found
+Checking object directories: 100% (256/256), done.
+Checking objects: 100% (8924/8924), done.
+dangling blob fc81f3f48b7d8298d9624c2f210a41d9eb8edaf8
+dangling blob 6b5c1ba9a16089f04a71c4b691bc00a1c6f3310f
+dangling commit 3ce4507cec2d6c0e83c263500759a55156d57876
+</code></pre>
+
+<h3 id="toc_6">git cherry-pick</h3>
+
+<p>这个是我最喜欢的命令了，git cherry-pick [commit-hash], 可以将其他分支的单次commit合并到当前分支，而不是整个分支合并，也不会扰乱当前分支，酷毙了。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[字符编码]]></title>
+    <link href="./14913797880850.html"/>
+    <updated>2017-04-05T16:09:48+08:00</updated>
+    <id>./14913797880850.html</id>
+    <content type="html"><![CDATA[
+<p>乱码是我们在使用计算机(不止编程)中经常遇到，如，网页显示乱码，Linux文本文件到Windows中乱码。最近花时间研究了一番，在这里做个总结。</p>
+
+<span id="more"></span><!-- more -->
+
+<p>字符编码就是要将字符转换为计算机里的二进制信息存储，当我们需要的时候读取的时候通过该编码方式将二进制转换为人能看懂的有意义的信息。字符编码需要经历一下几个过程：</p>
+
+<p>1.字符表（Character repertoire）：知道一个系统需要支持哪些字符，比如，英文，中文日文和拉丁符号。<br/><br/>
+2.编码字符集（CCS:Coded Character Set）：给字符表里的抽象字符编上一个数字，也就是字符集合到一个整数集合的映射。也就是给每一个要用到字符一个唯一的编号，这个是将字符到数字的一一映射。其中unicode就是这一层的，unicode是一个字符集。<br/><br/>
+3.字符编码表（CEF:Character Encoding Form）：将字符集里字符对应的整数转换成有限长度的二进制位，便于计算机使用一定长度的二进制形式表示该整数。其中，utf-8, utf-16就是这个层面的。<br/><br/>
+4.字符编码方案（CES:Character Encoding Scheme）：对于CEF得到的二进制值具体如何在计算机中进行存储，传输。因为存在大端小端的问题，这就会跟具体的操作系统相关了。这种解决方案称为字符编码方案。   </p>
+
+<p><em>ASCII</em><br/><br/>
+这个不用说是做早的字符编码方式，用1个字节表示128个英文字符95个可打印字符和33个控制字符，ASCII用7位来表示128个字符的8位用来奇偶校验。</p>
+
+<p><em>EASCII</em><br/><br/>
+随着计算机的发展到欧洲，128个字符已经不能满足使用了。于是人们就想到还有的8位没有用上，于是将第8位也用上总共字符集就翻倍了变成256，这个编码规则也常被称为EASCII。EASCII基本解决了整个西欧的字符编码问题。</p>
+
+<p><em>中文编码</em><br/><br/>
+中国的汉字数量远远超过ASCII码数量，有10万之多。1个字节最多只能表示256个字符，这个时候需要一种编码来解决中文字符，GB2312就是解决这个问题的。GB2312使用2个字节来编码汉字和符号，同时兼容ASCII码(ASCII还是一个字节存储)。中文编码还有BIG5, GBK和GB18030。他们的关系如下：</p>
+
+<p>GB2312<br/><br/>
+描述：国家简体中文字符集<br/><br/>
+字节数：可变字节，ASCII用1个字节，汉字2字节<br/><br/>
+范围：能表示7445个符号，包含6753个汉字<br/><br/>
+兼容性： 兼容ASCII   </p>
+
+<p>BIG5<br/><br/>
+描述：统一繁体字符集<br/><br/>
+字节数：2字节<br/><br/>
+范围：能表示21886个符号<br/><br/>
+兼容性： 兼容ASCII，但与GB2312冲突   </p>
+
+<p>GBK<br/><br/>
+描述：GB2312扩展，加入对繁体字的支持<br/><br/>
+字节数：2字节<br/><br/>
+范围：能表示21886个符号<br/><br/>
+兼容性： 兼容GB2312   </p>
+
+<p>GB18030<br/><br/>
+描述：中日韩文字编码<br/><br/>
+字节数：可变字节，1字节表示ASCII, 2字节和4字节<br/><br/>
+范围：能表示27484个符号<br/><br/>
+兼容性： 兼容GB2312   </p>
+
+<p><em>Unicode编码字符集</em><br/><br/>
+针对不同的语言采用不同的编码，有可能导致冲突与不兼容性，unicode统一编码世界所有的字符。Unicode字符集涵盖了目前人类使用的所有字符，并为每个字符进行统一编号，分配唯一的字符码（Code Point）。Unicode字符集将所有字符按照使用上的频繁度划分为17个层面（Plane），每个层面上有216=65536个字符码空间。</p>
+
+<p><em>Unicode编码字符集的实现方式</em><br/><br/>
+我们有了统一编码，但是怎样将Unicode编码存储到计算机里的呢？目前这种实现方式有utf-8, utf-16,utf-32和BOM。其中 utf-16是以2个字节存储utf-32是以4个字节存储，这样一来就有一个不好的地方，如ASCII字符本来是1个字节就够了，分配2个或4个字符会导致占用很多空间，导致普通文本的体积变大。这个时候utf-8恰好解决这个问题，utf-8以可变长度字节数来存储。</p>
+
+<p><em>utf-16、utf-32</em><br/><br/>
+utf(Unicode Transformation Format), 是规定如何将字符集里字符对应的整数转换成有限长度的二进制位以便存储。utf-16采用2个字节存贮unicode字符集。utf-32采用4个字节存贮unicode字符集。</p>
+
+<p><em>utf-8</em><br/><br/>
+utf-16、utf-32分别是采用固定的2个字节和4个字节存储，比较浪费空间。有没有一种能够根据字符大小可变的存储方式呢？utf-8就是这个编码方式，UTF-8用1～4个字节来表示字符。例如，原来的ASCII在utf8中继续采用1个字节， 而汉字则采用2个或3个字节。这样根据实际情况来采用可变长度编码大大节省了空间。</p>
+
+<p><em>Little endian和Big endian</em><br/><br/>
+一个字符可能占用多个字节, 在计算机中可以是&#39;ABCD&#39;也可以是&#39;CDAB&#39;, 到底是采取什么顺序呢？实际上两者都有可能，并分别有不同的名字。如果存储为 AB CD，则称为Big Endian；如果存储为 CD AB，则称为Little Endian。因此，utf-16又有utf-16le, utf-16be。</p>
+
+<p><em>Mysql中的编码</em><br/><br/>
+查看MySQL中的字符编码：</p>
+
+<pre><code>show variables like &#39;character%&#39;;
+</code></pre>
+
+<p>得到如下结果：</p>
+
+<pre><code>character_set_client  utf8
+character_set_connection  utf8
+character_set_database  utf8
+character_set_filesystem  binary
+character_set_results utf8
+character_set_server  utf8
+character_set_system  utf8
+character_sets_dir  /usr/local/Cellar/mysql/5.6.20/share/mysql/charsets/
+</code></pre>
+
+<p>其中，<br/><br/>
+character_set_client: 为客户端编码方式， 也就是客户端连接向服务器发送请求，请求字符的编码方式；<br/><br/>
+character_set_connection: 为建立连接使用的编码；<br/><br/>
+character_set_database: 数据库的默认编码；<br/><br/>
+character_set_results: 结果集的编码， 服务发送给客户端采用的编码方式；<br/><br/>
+character_set_server: 数据库服务器的默认编码；  </p>
+
+<p>导致我们查询结果乱码的主要是：set character_set_client，set character_set_connection，set character_set_results。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Javascript新接口]]></title>
+    <link href="./14913797913804.html"/>
+    <updated>2017-04-05T16:09:51+08:00</updated>
+    <id>./14913797913804.html</id>
+    <content type="html"><![CDATA[
+<p>随着Html5的到来，javascript也得到极大的发展，产生了很多新API，给web应用带来很大的便利。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">requestAnimationFrame()</h3>
+
+<p>这个API是给我们来创建动画用，在html5之前我们创建动画基本是用setInterval()来循环执行。</p>
+
+<pre><code>(function(){
+  function updateAnimations(){
+  doAnimation1();
+  doAnimation2(); //其他动画
+}
+  setInterval(updateAnimations, 100);
+})();
+</code></pre>
+
+<p>这个设置动画最主要的问题是，显示器本身也需要刷新，设置时间间隔导致动画不平滑。</p>
+
+<p>requestAnimationFrame()只是告诉浏览器需要执行动画，至于多少时间执行由浏览器自己决定和优化。</p>
+
+<pre><code>function updateProgress(){
+        var div = document.getElementById(&quot;status&quot;);
+        div.style.width = (parseInt(div.style.width, 10) + 5) + &quot;%&quot;;
+        if (div.style.left != &quot;100%&quot;){
+            mozRequestAnimationFrame(updateProgress);
+} }
+mozRequestAnimationFrame(updateProgress);
+</code></pre>
+
+<p>moz前缀大家应该明白的吧，还有webkitRequestAnimationFrame与msRequestAnimationFrame。</p>
+
+<h3 id="toc_1">Page Visibility API</h3>
+
+<p>页面可见性api, 能够好的帮助我们了解用户是与当前页面互交。也就是说，如果当前页面别最小化，或者被其他程序遮挡住，那么我们可以将该页面的一些动画效果后后台服务可以暂停。这样大大节省开销。</p>
+
+<p>Page Visibility API由3个部分组成：<br/><br/>
+1.document.hidden:表示页面是否隐藏的布尔值。页面隐藏包括页面在后台标签页中或者浏览<br/>
+器最小化。<br/><br/>
+2.document.visibilityState, 表示下列 4 个可能状态的值:(1)页面在后台标签页中或浏览器最小化;(2)页面在前台标签页中;(3)实际的页面已经隐藏,但用户可以看到页面的预览(就像在 Windows 7 中,用户把鼠标移动到<br/>
+任务栏的图标上,就可以显示浏览器中当前页面的预览);(4)页面在屏幕外执行预渲染处理<br/><br/>
+3.visibilitychange 事件</p>
+
+<pre><code>if (document.hidden || document.msHidden || document.webKitHidden){ //页面隐藏了
+} else { //页面未隐藏
+}
+</code></pre>
+
+<h3 id="toc_2">Geolocation API</h3>
+
+<p>地理位置的api, 也就是浏览器能获得用户的地理位置经纬度。这个在很多见的到。是由navigator.geolocation对象来实现。</p>
+
+<h3 id="toc_3">File API</h3>
+
+<p>File API让web中也能访问计算机中的文件成为可能而不是简单使用&lt;input type=&quot;file&quot;&gt;字段。</p>
+
+<p>每个 File 对象都有下列只读属性。<br/><br/>
+1. name:本地文件系统中的文件名。<br/><br/>
+2. size:文件的字节大小。<br/><br/>
+3. type:字符串,文件的 MIME 类型。<br/><br/>
+4. lastModifiedDate:字符串,文件上一次被修改的时间   </p>
+
+<pre><code>var filesList = document.getElementById(&quot;files-list&quot;);
+EventUtil.addHandler(filesList, &quot;change&quot;, function(event){ 
+var files = EventUtil.getTarget(event).files,
+  i = 0,
+  len = files.length;
+while (i &lt; len){
+  console.log(files[i].name + &quot; (&quot; + files[i].type + &quot;, &quot; + files[i].size +&quot; bytes) &quot;);
+  i++; }
+});
+</code></pre>
+
+<h3 id="toc_4">Web 计时</h3>
+
+<p>主要是用来检查页面的性能，Web 计时机制的核心是 window.performance 对象。方法众多， 如：<br/><br/>
+1. redirectCount:页面加载前的重定向次数。<br/><br/>
+2. navigationStart:开始导航到当前页面的时间。   </p>
+
+<h3 id="toc_5">Web Workers</h3>
+
+<p>这个绝对是神器之一，js可以像其他语言一样，讲一些耗时间的操作使用线程、后台进程等放在后台进行。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Javascript中类，名字空间和类的继承的实现]]></title>
+    <link href="./14914439620917.html"/>
+    <updated>2017-04-06T09:59:22+08:00</updated>
+    <id>./14914439620917.html</id>
+    <content type="html"><![CDATA[
+<p>最近在做一个微信项目，由于微信加载页面很慢，所以像jquery这些成熟的js库显得是个庞然大物。没办只能自己动手实现一些基础的东西，<br/>
+首先，需要实现最基础javascript的类定义和类的继承，其次是名字空间。这几个是方便我们管理和组织代码最基础的，当然不是必须的，你也可以以最少代码方式将js写在你需要的地方；作为一个完整的项目我不建议这做。来看看我的具体实现吧。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">名字空间</h3>
+
+<p>Javascript中没有namespace概念，稍微面向对象一点，所有的对象跑在顶级作用域下是个很大的麻烦。所以首先要解决这个问题，实现的方式以一个空对象作为空间名字，如： BH.file.image.Upload等。我们在Upload空间下定义自己的类。</p>
+
+<p>具体实现：</p>
+
+<pre><code>省略代码段...
+
+namespace: function (nstr) {
+      var fns = nstr.split(&#39;.&#39;), pns = BH;
+      if (fns[0] == &#39;BH&#39;) {
+        fns.shift();
+      }
+      for (var i = 0; i &lt;= fns.length - 1; i++) {
+        pns[fns[i]] = pns[fns[i]] || {};
+        pns = pns[fns[i]];
+      }
+      return pns;
+    }
+
+省略代码段...
+</code></pre>
+
+<p>方法很简单，一次遍历以&#39;.&#39;分割的空间名，然后设置为空对象即可，当然一定要讲起始空间保存这个是关键。最后返回最后一个空间作为当前对象。</p>
+
+<p>使用方法：<br/><br/>
+BH.namespace(&#39;BH.file.image.Upload&#39;);<br/><br/>
+BH.file.image.Upload // 为空对象{}</p>
+
+<h3 id="toc_1">类定义</h3>
+
+<p>严格的讲javascript是没有类这个概念的，一切都是对象。我们为了面向对象方便，运用各种设计模式实现与其他语言中等同的类。这些实现方式不少于5种，比如：工厂模式，构造函数模式，原型模式等等，各有利弊。我构造函数和原型组合的方式。</p>
+
+<p>实现如下：</p>
+
+<pre><code>  defines: function (nstr, prototype) {
+      var nstr = nstr.split(&#39;.&#39;),
+          fn = nstr.pop(),
+          ns = BH.namespace(nstr.join(&#39;.&#39;));
+      ns[fn] = prototype.constructor || function () {}; //设置构造函数为constructor，或者空函数
+      ns[fn].prototype = prototype; //设置prototype
+      prototype.constructor = ns[fn]; //设置prototype的constructor属性指向当前函数而不是Object
+      return ns[fn];
+  }
+</code></pre>
+
+<p>使用方法：</p>
+
+<pre><code>BH.defines(&#39;BH.file.image.Upload&#39;, {
+  constructor: function() {}, //定义构造函数
+  A: function() {},
+  attrB: &#39;attr&#39;
+});
+</code></pre>
+
+<h3 id="toc_2">类继承</h3>
+
+<p>和类定义一样，javascript中也是用设计模式实现等同其他语言的继承方式。实现方式很多，我才用目前认为是最好的一种方式--寄生组合式继承。这个也是YUI中实现继承的方式。</p>
+
+<p>实现如下：</p>
+
+<pre><code>extend: function (sub, parent, options) {
+  var emptyClass = function () {};
+  emptyClass.prototype = parent.prototype;
+  sub.prototype = new emptyClass();
+  sub.prototype.constructor = sub;
+  sub.superclass = superc.prototype;
+
+  if (options) {
+    for (var i in options) {
+      subc.prototype[i]=options[i];
+    }
+  }
+
+  return sub;
+}
+</code></pre>
+
+<p>采用一个空函数做为构造函数来置空父类的构造函数，同时继承父类的prototype，这样做的目的为了避免引用数据类共享带来的问题。然后用options覆盖父类属性和方法，如果需要的话。</p>
+
+<p>使用方法：<br/><br/>
+BH.defines(&#39;BH.a.B&#39;);<br/><br/>
+BH.extend(BH.a.B, BH.a.C { name: &#39;B&#39;});</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[记一枚不错的Gem：wechat-rails]]></title>
+    <link href="./14914440114235.html"/>
+    <updated>2017-04-06T10:00:11+08:00</updated>
+    <id>./14914440114235.html</id>
+    <content type="html"><![CDATA[
+<p>很少因为某个gem写博客觉得只是某个工具，最近做微信发下一枚不错的gem, 不得不记一笔。</p>
+
+<p>wechat-rails是一个微信开发者api接口的gem包，可以在rails和命令行中使用。它的主要优点有这么几个：</p>
+
+<ol>
+<li>提供命令行调用方式，大大方便了调试</li>
+<li>DSL的事件处理方式，让开发者更关注具体业务逻辑</li>
+<li>最重要的作者对ruby的使用很熟练，gem设计很简洁明了</li>
+</ol>
+
+<p>安装和使用自己去看他的readme不再这里重复了，我们来看看使用的几个要点。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">配置文件</h3>
+
+<p>命令行和rails的配置不一样，命令行需要在自己的home目录下面建立一个~/.wechat.yml文件，access_token是一个当前用户具有读写权限的文件目录，注意指定到具体的文件，用于存放获取的access_token。</p>
+
+<pre><code>  appid: &quot;my_appid&quot;
+  secret: &quot;my_secret&quot;
+  access_token: &quot;/var/tmp/wechat_access_token&quot;
+</code></pre>
+
+<p>rails配置是config/wechat.yml, 类似database.yml需要为每个环境分别配置。</p>
+
+<pre><code>default: &amp;default
+  appid: &quot;app_id&quot;
+  secret: &quot;app_secret&quot;
+  token:  &quot;app_token&quot;
+  access_token: &quot;/var/tmp/wechat_access_token&quot;
+
+production: 
+  appid: &lt;%= ENV[&#39;WECHAT_APPID&#39;] %&gt;
+  secret: &lt;%= ENV[&#39;WECHAT_APP_SECRET&#39;] %&gt;
+  token:   &lt;%= ENV[&#39;WECHAT_TOKEN&#39;] %&gt;
+  access_token:  &lt;%= ENV[&#39;WECHAT_ACCESS_TOKEN&#39;] %&gt;
+
+staging: 
+  &lt;&lt;: *default
+
+development: 
+  &lt;&lt;: *default
+
+test: 
+  &lt;&lt;: *default
+</code></pre>
+
+<h3 id="toc_1">rails中使用</h3>
+
+<p>如果controller需要使用微信api, 可以直接在controller中声明。</p>
+
+<pre><code>class WechatsController &lt; ApplicationController
+  wechat_responder #将weichat-rails include进来
+
+  on :text do |request, content|
+    request.reply.text &quot;echo: #{content}&quot; #Just echo
+  end
+
+  on :text, with:&quot;help&quot; do |request, help|
+    request.reply.text &quot;help content&quot; #回复帮助信息
+  end
+
+  on :fallback, respond: &quot;fallback message&quot;  
+end
+</code></pre>
+
+<p>上面的代码，wechat_responder用于声明当前controller接受微信回调，one :text 代码块用于声明处理微信不同类型的回调消息，但是当两声类型明相同是只调用第一声明的代码块。fallback是默认处理方式。</p>
+
+<h3 id="toc_2">rails是如何调用api接口的</h3>
+
+<p>上面代码只是涉及到如何响应微信的回调请求，如果你想使用其他高级接口，比如：菜单修改，用户消息查询。怎么办呢？看看下面代码：</p>
+
+<pre><code>if defined? ActionController::Base
+  class ActionController::Base
+    def self.wechat_responder opts={}
+      self.send(:include, Wechat::Responder)
+      if (opts.empty?)
+        self.wechat = Wechat.api
+        self.token = Wechat.config.token
+      else
+        self.wechat = Wechat::Api.new(opts[:appid], opts[:secret], opts[:access_token])
+        self.token = opts[:token]
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>看到没有self.wechat = Wechat.api这个就是微信api接口实例，在当前controller中使用wechat就可以。如，获得关注者列表：</p>
+
+<pre><code>wechat.users
+</code></pre>
+
+<h3 id="toc_3">wechat-rails是如何缓存access_token?</h3>
+
+<p>wechat-rails使用文件来缓存access_token， 也就是wechat.yml中配置的文件路径。wechat-rails会每次先读取这个文件的内容，当出现访问异常时，说明access_token过期了，就需要重新请求微信然后将新的access_token写入该文件。</p>
+
+<p>这里有个问题，当我们在服务器集群上就不大好办了，除非你将access_token缓存文件置于共享目录。这样访问效率就低了。这里我的做法是使用memcache作为缓存，需要略作改进：</p>
+
+<pre><code>Wechat.class_eval do
+  # 使用数据库存储微信appid, secret和token信息，同时支付多个微信号。
+  # 因此，之前使用wechat.yml方式不再被支持
+  def self.api
+    raise &#39;we use database store token information, please use \&#39;set_weixin_api :app_name\&#39; inestad !&#39;
+  end
+end
+
+Wechat::AccessToken.class_eval do
+  def cache_key
+    &quot;weixin/#{appid}&quot;
+  end
+
+  # 使用Rails缓存来存储token, 覆盖原本的access_token使用文件存储方式
+  def token
+    @token_data = Rails.cache.read(cache_key) || refresh
+    return valid_token(@token_data)
+  end
+
+  def refresh
+    data = client.get(&quot;token&quot;, params:{grant_type: &quot;client_credential&quot;, appid: appid, secret: secret})
+    Rails.cache.write cache_key, data, expires_in: data[&quot;expires_in&quot;]
+    return @token_data = data
+  end
+end
+</code></pre>
+
+<p>将上面的代码至于config/initializers下面，就可以了。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Swift中的闭包]]></title>
+    <link href="./14914440431935.html"/>
+    <updated>2017-04-06T10:00:43+08:00</updated>
+    <id>./14914440431935.html</id>
+    <content type="html"><![CDATA[
+<p>闭包的概念来自函数编程，很多语言都支持。Swift对闭包的定义可能是最明确易懂的(与js和ruby比较，哈哈)，来看看官方定义。</p>
+
+<blockquote>
+<p>闭包是自包含的函数代码块，可以在代码中被传递和使用。<br/>
+闭包可以捕获和存储其所在上下文中任意常量和变量的引用。 这就是所谓的闭合并包裹着这些常量和变量，俗称闭包。</p>
+</blockquote>
+
+<p>非常明确的指出闭包的实质，一、闭包是可以被传递的代码块，二、闭包可以访问所处上下文(context)中的变量和常量。这里请记住一个词上下文(context), 对于闭包理解十分重要。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">简述一下什么是下上下文环境</h3>
+
+<p>context这个词在编程语言中是一个比较标准的专业术语，每种语言的文法必须要明确定义的。简单说，当我们函数调用时都会有个执行环境，这个执行环境主要是绑定相关的变量，对象等等。换句话说执行环境是伴随这当前的函数生命周期的一些对象和变量，当函数生命周期结束部分对象和变量随之消失。而闭包则可以在函数生命周期以外访问这些资源。</p>
+
+<h3 id="toc_1">Swift中闭包形式</h3>
+
+<p>1 全局函数是一个有名字但不会捕获任何值的闭包<br/><br/>
+2 嵌套函数是一个有名字并可以捕获其封闭函数域内值的闭包<br/><br/>
+3 闭包表达式是一个利用轻量级语法所写的可以捕获其上下文中变量或常量值的匿名闭包   </p>
+
+<p><em>闭包表达式语法</em>   </p>
+
+<pre><code>{ (parameters) -&gt; returnType in
+    statements
+}
+</code></pre>
+
+<p>用一对大括({})号包含，指定参数和返回值。</p>
+
+<p><em>来自官的举例</em>   </p>
+
+<p>对数组排序<br/><br/>
+let names = [&quot;Chris&quot;, &quot;Alex&quot;, &quot;Ewa&quot;, &quot;Barry&quot;, &quot;Daniella&quot;]   </p>
+
+<p>1、标准的使用，闭包函数</p>
+
+<pre><code>func backwards(s1: String, s2: String) -&gt; Bool {
+    return s1 &gt; s2
+}
+var reversed = sort(names, backwards)
+</code></pre>
+
+<p>2、使用闭包表达式</p>
+
+<pre><code>reversed = sort(names, { (s1: String, s2: String) -&gt; Bool in
+    return s1 &gt; s2
+    })
+
+</code></pre>
+
+<p>3、自动推断类型参数类型和返回值</p>
+
+<pre><code>reversed = sort(names, { s1, s2 in return s1 &gt; s2 } ) //参数类型和返回类型省略
+</code></pre>
+
+<p>4、单表达式闭包隐式返回</p>
+
+<pre><code>reversed = sort(names, { s1, s2 in s1 &gt; s2 } ) //省略return
+</code></pre>
+
+<p>5、参数名称缩写</p>
+
+<pre><code>reversed = sort(names, { $0 &gt; $1 } ) //通过$0,$1,$2来顺序调用闭包的参数
+</code></pre>
+
+<p>6、运算符函数<br/>
+Swift 的String类型定义了关于大于号 (&gt;) 的字符串实现，其作为一个函数接受两个String类型的参数并返回Bool类型的值。因此可以更简洁的写为</p>
+
+<pre><code>reversed = sort(names, &gt;)
+</code></pre>
+
+<p>这个有点复杂了，需要进一步了解运算符函数相关内容了。</p>
+
+<p><em>尾随闭包</em><br/><br/>
+尾随闭包是另外一种闭包的调用方式，当你将闭包作为最后一个函数传递时，可以将其放在函数参数列表以外。还是以sort为例：</p>
+
+<p>正常使用</p>
+
+<pre><code>var reversed = sort(names, backwards)
+reversed = sort(names, { $0 &gt; $1 } )
+</code></pre>
+
+<p>尾随闭包，闭包体位于函数调用后面</p>
+
+<pre><code>reversed = sort(names) { $0 &gt; $1 }
+</code></pre>
+
+<h3 id="toc_2">比较swift, ruby和javascript中的闭包</h3>
+
+<p>我们看几个不同语言中的例子来看看什么是闭包。</p>
+
+<p>Javascript中闭包主要是通过函数传递或者嵌套定义来实现</p>
+
+<pre><code>function a() {
+  var counter = 1;
+  renturn function b() {
+    return counter ++;
+  }
+}
+
+c = a();
+c() // counter为2, 一般情况执行完a()之后，counter就会被回收，但是这里因为闭包b将它带出了作用域
+</code></pre>
+
+<p>Ruby不支持嵌套定义函数，闭包是通过Proc来实现</p>
+
+<pre><code>def a
+  counter = 1
+  return Proc.new { counter += 1 }
+end
+
+c = a
+c.call  # counter为2
+</code></pre>
+
+<p>ios中闭包</p>
+
+<pre><code>
+func a() -&gt; () -&gt; Int {
+    var counter = 1;
+    func b() -&gt; Int {
+      return ++counter
+    }
+    return b
+}
+
+var c = a()
+c() //counter为2
+</code></pre>
+
+<p>通过从上面例子我们可以看出，1. 要形成闭包首先得支持代码块传递，2. 闭包的行为是能够将变量带出在当前执行上下文环境以外，也就是本身作用域之外还能继续访问。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[rails的中的MIME类型]]></title>
+    <link href="./14914440715103.html"/>
+    <updated>2017-04-06T10:01:11+08:00</updated>
+    <id>./14914440715103.html</id>
+    <content type="html"><![CDATA[
+<p>Rails开发中经常使用不同的请求格式来处理不同的响应，最常见的是同一个action对html/text和json格式的响应不同的数据。 那么, Rails中有哪些响应格式已经是怎么处理这些请求格式呢？本文详细讲讲rails中的处理方式。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">什么是MIME?</h3>
+
+<p>先看看MIME的标准定义。MIME(Multipurpose Internet Mail Extensions)多用途互联网邮件扩展类型，是来设定某种扩展名的文件用一种应用程序来打开的方式类型，当该扩展名文件被访问的时候，浏览器会自动使用指定应用程序来打开。<br/><br/>
+MIME早期是应用于电子邮件系统，后来也应用到了浏览器中。浏览器会根据MIME类型来打开不同的文件，如mp3文件。早期的HTTP协议中是没有附加数据类型信息，所有传输的数据都被解释为超文本标记语言（HTML文档），当MIME被支持以后HTTP传输的不仅是普通的文本，而是我们现在看到的各种个样的数据形式了。</p>
+
+<h3 id="toc_1">MIME的定义和组成</h3>
+
+<p>MINE类型是由两部分组成，前面是数据的大类别，文本text、图象image等，后面定义具体的种类。例如：</p>
+
+<pre><code>//大类别为text
+ html文本   .html text/html
+ xml文档    .xml  text/xml
+ 普通文本    .txt  text/plain
+
+//大类别为application
+ XHTML文档  .xhtml application/xhtml+xml
+ pdf文档    .pdf application/pdf
+
+//大类别为image
+ png图像    .png image/png
+ git图形    .gif image/gif
+</code></pre>
+
+<p>MIME实际上是由一个专门的组织IANA来确认标准的MIME类型，但是由于互联网发展速度太快，由IANA来确定标准远远跟不上应用程序的发展速度。因此，现在多数采用事实标准，也就是由服务器和浏览器共同承认的MIME类型即可；通常web服务器(下面要介绍rails中的mime类型)和浏览器都已默认设置了常见的mime类型，当确实需要使用一些不常见的mime类型时，可以在服务器和浏览器同时设置，以好让浏览器解析。<br/><br/>
+在服务器端，是通过请求的后缀名来识别不同的mime类型的，因此服务器中必须定义有请求后缀与mime类型的对应关系（rails中是在action_dispatch/http/mime_types.rb中定义）。<br/>
+浏览器在接受响应数据时，接受的服务器的数据流，也就是说不会解析文件的名字，要让浏览器识别不同的类型的文件数据就需要在响应数据中设置mime类型信息。服务器在响应数据前，首先是要设置数据的MIME类型信息，这个是通过http信息头部的Content-type关键字进行设定的。</p>
+
+<pre><code>//冒号之后必须一个空格
+Content-type: text/html
+</code></pre>
+
+<h3 id="toc_2">Rails中的MIME类型</h3>
+
+<p>接下来，我们看看Rails中是如何处理mime类型的。我们上面讲过，服务端是通过请求后缀来识别mime类型的。Rails的请求后缀可以通过request.formart得到，具体看看format的处理细节：</p>
+
+<pre><code>def formats
+  @env[&quot;action_dispatch.request.formats&quot;] ||=
+    if parameters[:format]
+      Array(Mime[parameters[:format]])
+    elsif use_accept_header &amp;&amp; valid_accept_header
+      accepts
+    elsif xhr?
+      [Mime::JS]
+    else
+      [Mime::HTML]
+    end
+end
+</code></pre>
+
+<p>从上面代码可以看到，Rails首先会接受我们自己设定的format参数，这个参数可以通过3中方式设置：<br/><br/>
+1. url后缀，如：users.json, users/1.json<br/><br/>
+2. 通过foramt参数传递，如：{id: 1, format: &#39;json&#39; }<br/><br/>
+3. 路由中设置默认formart, 如：defaults: { format: :json }    </p>
+
+<p>如果没有指定format参数rails会检查你请求头部，也就是accepts方法做的事情，其实也就是查看Content-type。<br/><br/>
+上面都没有找到mime类型并且为异步请求，就直接设置format为&#39;js&#39;类型(注意，不是json)。<br/><br/>
+最后都没有找到，就按普通html处理，也就是&#39;text/html&#39;。    </p>
+
+<p>前面已经提到过，服务器会维护一个format和mine类型的对应关系，rails中是由Mime::Type这里处理，调用Mime::Type.register来注册新的mime类型，具体见action_dispatch/http/mime_types.rb文件。</p>
+
+<h3 id="toc_3">不要用json类型来判断是否为异步请求</h3>
+
+<p>刚开始学javascript时候，很容易犯的一个错误就是使用json请求后缀来判断是否是ajax请求，这个绝大多数是没有问题的，因为将ajax请求设置为json后缀几乎是约定俗成了。实际上这样做的不靠谱的，上面的代码可以看出判断异步请求rails是用xhr?方法，这个方法是这样做的:</p>
+
+<pre><code>def xml_http_request?
+  @env[&#39;HTTP_X_REQUESTED_WITH&#39;] =~ /XMLHttpRequest/i
+end
+alias :xhr? :xml_http_request?
+</code></pre>
+
+<p>很明显，用的http请求的&#39;XMLHttpRequest&#39;关键字来判断是否是异步，而非请求头部的Content-type。</p>
+
+<p>总结，本文讲述了MIME类型的定义，组成部分和作用，以及Rails中对MIME类的处理，希望大家有所了解。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Redis主键失效原理]]></title>
+    <link href="./14914441437461.html"/>
+    <updated>2017-04-06T10:02:23+08:00</updated>
+    <id>./14914441437461.html</id>
+    <content type="html"><![CDATA[
+<p>Redis中设置主键失效的命令有：EXPIRE、EXPIREAT、PEXPIRE、PEXPIREAT、SETEX和PSETEX。一旦key设置的过期时间到期<br/>
+就会删除该key-value。那么Redis是如何让key失效的呢？</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">主键失效的方法</h3>
+
+<ol>
+<li>被动方法：主键被访问时如果发现失效，就删除掉该主键。</li>
+<li>主动方法：周期性的每隔一段时间检查下redis中是否有失效的主键，并且选择部分失效的主键删除。</li>
+</ol>
+
+<h3 id="toc_1">主键与失效时间</h3>
+
+<p>当我们往redis中存入key-value时，key会添加到一个key的字典表dict中；同时如果该key有过期时间，那么过期时间添加到expires字典表中；<br/>
+这两个字典表可以理解为分别是key:value和key:timeout的映射。当我们使用SETEX和PSETEX时，先将key添加到dict中，然后将过期时间添加到expires中；而使用EXPIRE、EXPIREAT、PEXPIRE、PEXPIREAT时，先检查dict中是否存在该主键，如果有就将主键和过期时间添加到expires中。</p>
+
+<h3 id="toc_2">被动失效方法</h3>
+
+<p>被动失效方法是在任何访问数据操作前，如，GET、MGET、HGET、LRANGE等等，先检查主键是否失效，如果失效就删除它。具体做法如下：</p>
+
+<ul>
+<li>获取主键的过期时间</li>
+<li>如果过期时间不存在或者服务器正在加载数据，不删除</li>
+<li>如果不是Redis是作为salve运行，不删除主键(接收master命令来处理，而不是在被动方法中删除)，slave的主键失效是由master控制，只需要通知使用者该主键失效了</li>
+<li>对比当前时间与过期时间，确认主键确实已经失效了</li>
+<li>如果确实失效，那么首先更新关于失效主键的统计个数，然后将该主键失效的信息进行广播，最后将该主键从数据库中删除</li>
+</ul>
+
+<p>主键失效广播做两件事，1.如果redis开启了AOF就将删除失效主键的这一操作以 DEL Key 的标准命令格式记录下来；2. 如果redis存在slave, 就给所有的slave发送<br/>
+DEL Key的标准命令格式消息，告诉slave删除各自的失效主键。</p>
+
+<h3 id="toc_3">主动失效方法</h3>
+
+<p>仅仅通过被动失效远远不够，如果一个主键一直不被再次访问那么它将永远不会被删除，显示造成很大的空间浪费。Redis还提供主动失效的方法，简单说就是每隔一段时间<br/>
+（默认10秒）检查一下数据库，从中删除失效主键。在redis服务器启动时，创建一个时间事件用来检查失效主键，这个检查时间默认10秒执行一次，设置失效的主键并不是所有的全部检查而是随机选择一定数量（默认10个）进行检查并且删除，如果失效主键的超过抽检样本比例的25%，Redis会认为当前数据失效主键很多，所以还会进行下一轮的检查直到比例小于25%，然后转向下一个数据库。同样redis也不会一次检查所有的数据库，而是一次最多处理16个数据库。这样做的目的是为了减少清理失效主键带来的性能下降。</p>
+
+<p>主动检查主键的具体做法是：</p>
+
+<ul>
+<li>记录上次执行检查的数据库编号和上次执行检查的时间</li>
+<li>如果当前数据库数量小于16（默认值）则处理全部数据库，如果上次执行时间大于时间限制说明失效主键很多，同样处理全部数据库</li>
+<li>遍历每个redis数据库</li>
+<li>如果expires字典表大小为0，说明该数据库中没有设置失效时间的主键，直接检查下一数据库</li>
+<li>如果expires字典表不为空，但是其填充率不足1%，那么随机选择主键进行检查的代价会很高，所以这里直接检查下一数据库</li>
+<li>如果expires字典表中的个数不足以达到抽样个数，则选择全部key作为抽样样本</li>
+<li>随机获取一个设置了失效时间的主键，检查其是否已经失效</li>
+<li>发现该主键确实已经失效, 删除该主键; 在删除前广播该主键的失效信息, 与被动方法相同, 同时更新失效主键的统计个数。</li>
+<li>如果失效的主键数占抽样数的百分比大于25%，则继续上述过程</li>
+</ul>
+
+<p>主动失效的算法可以在redis.conf中选择，随机，LRU和ttl。</p>
+
+<h3 id="toc_4">主键失效对Redis性能的影响</h3>
+
+<p>上面我们可以看到，定期检查失效主键需要对数据库遍历和对expires字典遍历，虽然redis设置了检查的数量和cpu执行时间限制，但是当失效主键很多时还是会影响性能，特别是短期内的失效时间，因此在使用失效时间还是要注意的。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Linux磁盘管理LVM原理]]></title>
+    <link href="./14914442067467.html"/>
+    <updated>2017-04-06T10:03:26+08:00</updated>
+    <id>./14914442067467.html</id>
+    <content type="html"><![CDATA[
+<blockquote>
+<p>LVM是Logical Volume Manager逻辑磁盘卷的简称，它是Linux环境下对磁盘分区管理的一种机制。它可以在运行的系统直接调整分区空间大小，<br/>
+是一种安全无痛的操作。</p>
+</blockquote>
+
+<p>写这个的原因是经历过一次很无奈的系统故障，运行数据库的机器磁盘写满，而系统的报警通知没有发出(各种喜剧性的巧合真实的凑到一起了)，导致整体应用无法使用。幸亏之安装系统使用了LVM，这个故障很快就解决。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">什么是LVM?</h3>
+
+<p>LVM是介于物理存储分区和文件系统之间的逻辑分区，他将一个或者多个物理分区(如:磁盘或者RAID)分为若干个最小逻辑单元，LVM分区建立在这些最小的逻辑单元上，文件系统建立LVM逻辑分区之上，当文件系统空间不够时，通过调整逻辑分区中的最小逻辑数量来动态改变系统空间大小。</p>
+
+<h3 id="toc_1">LVM中的术语</h3>
+
+<p>物理存储介质（The physical media）：这里指系统的存储设备：硬盘，如：/dev/hda1、/dev/sda等等，是存储系统最低层的存储单元。</p>
+
+<p>PV: 物理卷（physical volume）。物理卷就是指硬盘分区或从逻辑上与磁盘分区具有同样功能的设备(如RAID)，是LVM的基本存储逻辑块，但和基本的物理存储介质（如分区、磁盘等）比较，却包含有与LVM相关的管理参数。</p>
+
+<p>VG: 卷组（Volume Group）：LVM卷组类似于非LVM系统中的物理硬盘，其由物理卷组成。可以在卷组上创建一个或多个“LVM分区”（逻辑卷），LVM卷组由一个或多个物理卷组成。</p>
+
+<p>LV: 逻辑卷（logical volume）：LVM的逻辑卷类似于非LVM系统中的硬盘分区，在逻辑卷之上可以建立文件系统(比如/home或者/usr等)。</p>
+
+<p>PE: 每一个物理卷被划分为称为PE(Physical Extents)的基本单元，具有唯一编号的PE是可以被LVM寻址的最小单元。PE的大小是可配置的，默认为4MB。</p>
+
+<p>LE: 逻辑卷也被划分为被称为LE(Logical Extents) 的可被寻址的基本单位。在同一个卷组中，LE的大小和PE是相同的，并且一一对应。</p>
+
+<h3 id="toc_2">LVM工作原理</h3>
+
+<p>LVM工作原理是简单描述，通过将底层的物理磁盘抽象封装起来，然后以逻辑卷的方式呈现给文件系统；而我们传统的磁盘管理中，应用程序直接访问文件系统，文件系统直接建立在物理分区之上，对物理磁盘分区改变对上层应用有直接的影响。有了LVM之后， 在应用与磁盘之间增加了逻辑卷，对物理磁盘的上层应用是感知不到的。因此可以在应用运行的同时动态调整逻辑卷大小，提高磁盘管理的灵活性。<br/>
+<img src="media/14914442067467/lvm1.jpg" alt="LVM"/></p>
+
+<p><strong>1.将我们的物理硬盘格式化成PV</strong><br/><br/>
+上图，我们有3块磁盘，sda, sdb和sdc, 我们首先要将这3块磁盘格式化为PV，假设每块磁盘400m, 那么每块磁盘就被划分为100个PE最小逻辑单元， 因为PE默认值是4M。格式化磁盘为PV其实就是将磁盘划分为一个个的PE。</p>
+
+<p><strong>2.创建一个VG</strong><br/><br/>
+创建好PV之后，我们将不同的PV加入到VG中，图中的第二层。创建VG其实就是将若干PE封装成一个大的PE池，然后在这个之上划分LV。</p>
+
+<p><strong>3.基于VG创建LV</strong><br/><br/>
+PV以及VG创建好以后我们是不能够直接使用的， 需要创建LV，图上第3层。创建LV的过程其实，就是拿出不同数量的PE，这些PE肯能来自不同磁盘，图中蓝色块。<br/>
+文件系统就是建立在LV只是，LV的大小是PE整数倍，默认是4m, 16m, 32m等等。</p>
+
+<p><strong>4.在创建好的LV之上进行文件系统的格式化，然后挂载使用</strong><br/><br/>
+LV创建好后，就能对其进行文件系统格式化如ext3，并且挂载使用。当某一文件系分区空间不够时，我们个随时给LV添加PE数量，来改变分区大小，这个过程数据不会丢失，也不需要重启系统。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Git中的撤销操作]]></title>
+    <link href="./14914442350852.html"/>
+    <updated>2017-04-06T10:03:55+08:00</updated>
+    <id>./14914442350852.html</id>
+    <content type="html"><![CDATA[
+<p>在使用Git的时候，有时候我们需要对已有的修改进行撤销操作， 接下来介绍一些基本的撤消操作相关的命令。</p>
+
+<h3 id="toc_0">git commit --amend修改最后一次提交</h3>
+
+<p>这个命名用于修改你最后的一次提交。如果在commit之后发现自己写错说明，或者漏掉某个文件，这个时候你可以用--amend重新提交一次。--amend使用与你刚才提交相同的快照进行修改，就相当于手动修改刚才的提交。<br/>
+当你执行--amend时，git会启动你的编辑器，你可以修改刚才的注释，如果有遗忘的文件没有提交，可以先缓存然后在执行--amend。</p>
+
+<pre><code class="language-ruby">git add test.rb
+git commit --amend
+</code></pre>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_1">撤销已经缓存的文件</h3>
+
+<p>--amend命令是修改已经提交的内容。当文件不小心被缓存之后，特别当你使用git add .之后，发现很多文件不是我们要提交的。这个时候你可以用：</p>
+
+<pre><code class="language-ruby">git reset HEAD &lt;file&gt;
+</code></pre>
+
+<p>取消文件的缓存，但是文件修改的内容不会撤销。</p>
+
+<h3 id="toc_2">撤销已经修改的文件内容</h3>
+
+<p>如果我们需要撤销已经修改的内容，就需要使用, git checkout filename</p>
+
+<pre><code class="language-ruby">git checkout test.rb
+</code></pre>
+
+<p>现在test.rb所有的修改都被撤回到当前分支HEAD时的修改了。</p>
+
+<h3 id="toc_3">回滚当前版本</h3>
+
+<p>当我们回滚到历史某一个版本时，我们可以使用git reset命名。一般我们当前指针，也就是branch_name已经HEAD所指向的那个节点，是我们正在使用的版本。如果要回到当前版本之前某个历史版本，就可以使用git reset [--hard|soft|mixed|merge|keep] [<commit>或HEAD]</p>
+
+<ol>
+<li>--hard, 重置当前工作目录和索引。也就是说，你本地修改内容都会丢弃，并且HEAD指向<commit>。</li>
+<li>--soft, 当前工作目录和和索引不会改变，仅仅将HEAD指向<commit>。也就是说所有的修改，缓存都不变，和你没有reset之前是一样的。</li>
+<li>--mixed， 当前工作目录，但是或重置索引。也就是说，你的修改内容不会变化，但是会取消缓存。</li>
+<li>--merge, --keep用的不多,不说了。</li>
+</ol>
+
+<p>其中<commit>默认是最后一次commit, 模式默认是mixed。</p>
+
+<h3 id="toc_4">撤销某次提交</h3>
+
+<p>当你发现某次提及有问题，需要撤销时可以使用git revert [<commit>或者HEAD]。revert可以说是commit的逆操作， 你commit做了哪些操作，revert就相反的执行; commit修改文件，添加文件，revert就删除文件，并且撤销修改，然后产生一次提交。</p>
+
+<pre><code>git revert 226d852d0c0
+</code></pre>
+
+<p>226d852d0c0提交就会被一次新的提交重置掉。</p>
+
+<p>它与reset --hard的区别是，reset时历史上回朔，在这个历史区间内的所有提交都将的丢弃；而revert则是正对某次提交进行一次逆向操作。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[网页字体]]></title>
+    <link href="./14914442671709.html"/>
+    <updated>2017-04-06T10:04:27+08:00</updated>
+    <id>./14914442671709.html</id>
+    <content type="html"><![CDATA[
+<blockquote>
+<p>一直对网页字体不敏感，今天重要看到一篇不错的<a href="http://blog.jobbole.com/73722/">文章</a>，做个摘要。</p>
+
+<span id="more"></span><!-- more -->
+</blockquote>
+
+<h3 id="toc_0">操作系统预装的字体</h3>
+
+<p><strong>Windows操作系统：</strong></p>
+
+<ul>
+<li>黑体：SimHei</li>
+<li>宋体：SimSun</li>
+<li>新宋体：NSimSun</li>
+<li>仿宋：FangSong</li>
+<li>楷体：KaiTi</li>
+<li>仿宋GB2312：FangSongGB2312</li>
+<li>楷体GB2312：KaiTiGB2312</li>
+<li>微软雅黑：Microsoft YaHei （Windows 7开始提供）</li>
+</ul>
+
+<p><strong>OS X操作系统：</strong></p>
+
+<ul>
+<li>冬青黑体: Hiragino Sans GB （SNOW LEOPARD开始提供）</li>
+<li>华文细黑：STHeiti Light （又名STXihei）</li>
+<li>华文黑体：STHeiti</li>
+<li>华文楷体：STKaiti</li>
+<li>华文宋体：STSong</li>
+<li>华文仿宋：STFangsong</li>
+</ul>
+
+<p>如果用户装了MicroSoft Office，还会多出一些字体。</p>
+
+<ul>
+<li>隶书：LiSu</li>
+<li>幼圆：YouYuan</li>
+<li>华文细黑：STXihei</li>
+<li>华文楷体：STKaiti</li>
+<li>华文宋体：STSong</li>
+<li>华文中宋：STZhongsong</li>
+<li>华文仿宋：STFangsong</li>
+<li>方正舒体：FZShuTi</li>
+<li>方正姚体：FZYaoti</li>
+<li>华文彩云：STCaiyun</li>
+<li>华文琥珀：STHupo</li>
+<li>华文隶书：STLiti</li>
+<li>华文行楷：STXingkai</li>
+<li>华文新魏：STXinwei</li>
+</ul>
+
+<h3 id="toc_1">英文字体优先于中文字体</h3>
+
+<p>font-family应该优先指定英文字体，然后再指定中文字体。否则，中文字体所包含的英文字母，会取代英文字体, 很丑陋。<br/><br/>
+为了保证兼容性，中文字体的中文名称和英文名称，应该都写入font-family。比如，”微软雅黑”的英文名称是Microsoft YaHei。<br/><br/>
+此外，中文字体的中文名称，以及由多个单词组成的英文名称，应该放在双引号内。</p>
+
+<h3 id="toc_2">Windows平台和Mac平台</h3>
+
+<p>由于Windows和Mac的中文字体没有交叉，所以应该同时为两个平台指定字体。<br/><br/>
+常见的做法是，Windows平台指定”微软雅黑”（Microsoft YaHei），Mac平台指定”华文细黑”（STXihei）。</p>
+
+<h3 id="toc_3">衬线体和无衬线体</h3>
+
+<blockquote>
+<p>所谓”衬线体”（Serif），指的是笔画的末端带有衬线的字体。</p>
+</blockquote>
+
+<p>衬线体装饰性强，往往用于标题；无衬线体清晰度好，往往用于正文。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Web响应式设计笔记整理]]></title>
+    <link href="./14914443335799.html"/>
+    <updated>2017-04-06T10:05:33+08:00</updated>
+    <id>./14914443335799.html</id>
+    <content type="html"><![CDATA[
+<p>最近在开发web相关功能， 整理下相关知识点。主要内容来自《响应式Web设计HTML5和CSS3实战》笔记整理。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">响应式设计栅格系统</h3>
+
+<ol>
+<li>Semantic (<a href="http://semantic.gs">http://semantic.gs</a>);</li>
+<li>Skeleton (<a href="http://getskeleton.com">http://getskeleton.com</a>);</li>
+<li>Less Framework (<a href="http://lessframework.com">http://lessframework.com</a>);</li>
+<li>1140 CSS Grid (<a href="http://cssgrid.net">http://cssgrid.net</a>);</li>
+<li>Columnal (<a href="http://www.columnal.com)%E3%80%82">http://www.columnal.com)。</a></li>
+</ol>
+
+<h3 id="toc_1">在线实例</h3>
+
+<ul>
+<li>响应式设计： <a href="http://mediaqueri.es">http://mediaqueri.es</a></li>
+<li>3D动画：<a href="http://demo.marcofolio.net/3d_animation_css3">http://demo.marcofolio.net/3d_animation_css3</a></li>
+</ul>
+
+<h3 id="toc_2">窗口大小调试工具</h3>
+
+<ul>
+<li>IE: Microsoft Internet Explorer Developer Toolbar(<a href="http://www.microsoft.com/download/en/details.aspx?id=18359">http://www.microsoft.com/download/en/details.aspx?id=18359</a>)</li>
+<li>Safari: ResizeMe(<a href="http://web.me.com/aaronholla/Safari_Extensions/ResizeMe.html">http://web.me.com/aaronholla/Safari_Extensions/ResizeMe.html</a>) , Resize(<a href="http://resizeSafari.com">http://resizeSafari.com</a>)</li>
+<li>Firefox: Firesizer(<a href="https://addons.mozilla.org/en-US/firefox/addon/firesizer/">https://addons.mozilla.org/en-US/firefox/addon/firesizer/</a>)</li>
+<li>Chrome:  Windows Resizer(<a href="https://chrome.google.com/webstore/detail/kkelicaakdan-">https://chrome.google.com/webstore/detail/kkelicaakdan-</a> hinjdeammmilcgefonfh)</li>
+</ul>
+
+<h3 id="toc_3">媒体查询：</h3>
+
+<p>媒体查询支持的浏览器：Firefox 3.6+、Safari 4+、Chrome 4+、 Opera 9.5+、iOS Safari 3.2+、Opera Mobile 10+、Android 2.1+和 Internet Explorer 9+</p>
+
+<p>css2 link标签媒体查询：</p>
+
+<pre><code>&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;screen-styles.css”&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait)&quot; href=&quot;portrait- screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;not screen and (orientation: portrait)&quot; href=&quot;portrait- screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait) and (min-width: 800px)&quot; href=&quot;800wide-portrait-screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait) and (min-width: 800px), projection&quot; href=&quot;800wide-portrait-screen.css&quot; /&gt;
+</code></pre>
+
+<p>css3样式表媒体查询：</p>
+
+<pre><code>@media screen and (max-device-width: 400px) { h1 { color: green } }
+@import url(&quot;phone.css&quot;) screen and (max-width:360px); 
+</code></pre>
+
+<p><strong>媒体查询内容</strong><br/><br/>
+width: 窗口宽度。<br/><br/>
+height: 窗口高度。<br/><br/>
+device-width: 设备屏幕的宽度<br/><br/>
+device-height: 设备屏幕的高度<br/><br/>
+orientation: 检查设备处于横向还是纵向。<br/><br/>
+aspect-ratio:基于窗口宽度和高度的宽高比。 例如：aspect-ratio: 16/9。<br/><br/>
+device-aspect-ratio: 设备渲宽度和高度的宽高比。<br/><br/>
+color: 每种颜色的位数。例如 min-color: 16 会检测设备是否拥有 16 位颜色。<br/><br/>
+color-index:设备的颜色索引表中的颜色数。值必须是非负整数。<br/><br/>
+monochrome:检测单色帧缓冲区中每像素所使用的位数。值必须是非负整数,如：monochrome: 2。 <br/>
+resolution:用来检测屏幕或打印机的分辨率,如 min-resolution: 300dpi。还可以接受每厘米像素点数的度量值,- 如 min-resolution: 118dpcm。<br/><br/>
+scan:电视机的扫描方式,值可设为 progressive(逐行扫描)或 interlace(隔行扫描)。如 720p HD 电视(720p 的 p 即表明是逐行扫描)匹配 scan:progressive，而 1080i HD 电视(1080i 中的 i 表明是隔行扫描)匹配 - scan: interlace。<br/><br/>
+grid:用来检测输出设备是网格设备还是位图设备。   </p>
+
+<p>IE8以下媒体查询：Respond.js(<a href="https://github.com/scottjehl/Respond)%E6%98%AF%E4%B8%BA">https://github.com/scottjehl/Respond)是为</a> Internet Explorer 8及更低版本增加 媒体查询支持的最快的 JavaScript 工具,但它目前无法解析 CSS 的@import 命令。</p>
+
+<h3 id="toc_4">Reset CSS（<a href="http://www.cssreset.com/%EF%BC%89">http://www.cssreset.com/）</a></h3>
+
+<p>HTML4<br/><br/>
+1. <a href="http://meyerweb.com/eric/tools/css/reset/">http://meyerweb.com/eric/tools/css/reset/</a><br/><br/>
+2. <a href="http://simplebits.com">http://simplebits.com</a><br/><br/>
+3. <a href="http://yui.yahooapis.com/3.17.2/build/cssreset/cssreset-min.css">http://yui.yahooapis.com/3.17.2/build/cssreset/cssreset-min.css</a></p>
+
+<p>HTML5<br/><br/>
+normalize.css(<a href="http://necolas.github.com/normalize.css/">http://necolas.github.com/normalize.css/</a>)</p>
+
+<p>阻止移动浏览器自动调整页面大小:</p>
+
+<pre><code>&lt;meta name=&quot;viewport&quot; content=&quot;initial-scale=1.0, user-scalable=no&quot; /&gt; user-scalable=no 即是禁止缩放。
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1.0&quot; /&gt; 浏览器将按照其窗口的实际大小来渲染页面, 将宽度设置为设备宽度。
+</code></pre>
+
+<h3 id="toc_5">流体布局</h3>
+
+<p>使用百分比布局创建流动的弹性界面,同时 使用媒体查询来限制元素的变动范围。将这两者组合到一起构成了响应 式设计的核心,基于此可以创造出真正完美的设计。 </p>
+
+<p>固定宽度改为百分比：</p>
+
+<pre><code> 目标元素宽度÷上下文元素宽度=百分比宽度
+</code></pre>
+
+<p>用em替换px:<br/><br/>
+1.是那 些使用 Internet Explorer 6 的用户也将能够缩放文字<br/><br/>
+2.如果我们给 <body>标签设置文字大小为 100%,给其他文字都使用相对单位 em,那这些文字都会受 body 上的初始声明的影响。这样做的好处就是,如果在完成了所有文字排版后,客户又 提出将页面文字统一放大一点,我们就可以只修改 body 的文字大小,其他所有文字也会 相应变大</p>
+
+<blockquote>
+<p>em 究竟是什么? em 是书面形式的大写字母“M”的简称,发音和 M 相同。以前,“M” 常被用来测定某种字体的大小,因为它是英文字母中最大(最宽)的字 母。如今,em 作为一个测量单位,指的是特定字母的宽度和高度相对 于特定字体磅值的比例。 </p>
+</blockquote>
+
+<p>弹性图片:</p>
+
+<pre><code>img,object,video,embed { max-width: 100%; } 
+</code></pre>
+
+<p>网页语言列表：<br/>
+<a href="http://www.iana.org/">http://www.iana.org/</a> assignments/language-subtag-registry</p>
+
+<h3 id="toc_6">解决跨浏览器问题</h3>
+
+<p>HTML5/CSS3修正：Modernizr(<a href="http://www.modernizr.com)%E3%80%82">http://www.modernizr.com)。</a><br/><br/>
+IE6、7、8 追加min/max媒体查询功能:  Respond.js(<a href="https://github.com/scottjehl/Respond">https://github.com/scottjehl/Respond</a>)<br/><br/>
+将导航链接转换为下拉菜单：<br/><br/>
+1. <a href="http://webdesignerwall.com/tutorials/css-responsive-navigation-menu">http://webdesignerwall.com/tutorials/css-responsive-navigation-menu</a><br/><br/>
+2. <a href="http://webdesignerwall.com/demo/responsive-menu/">http://webdesignerwall.com/demo/responsive-menu/</a></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Disqus评论参数说明]]></title>
+    <link href="./14914443947913.html"/>
+    <updated>2017-04-06T10:06:34+08:00</updated>
+    <id>./14914443947913.html</id>
+    <content type="html"><![CDATA[
+<p>在博客中引入Disqus评论功能时， 默认只需要添加一个 <strong>disqus_shortname</strong> 参数就可以， 这个参数是你在申请comments组是的标识。代码如下：</p>
+
+<span id="more"></span><!-- more -->
+
+<pre><code class="language-javascript">&lt;script type=&quot;text/javascript&quot;&gt;
+  var disqus_shortname = &#39;test&#39;; //这个就是你唯一的标识
+   
+  (function () {
+    var dsq = document.createElement(&#39;script&#39;); dsq.type = &#39;text/javascript&#39;; dsq.async = true;
+    dsq.src = &#39;http://&#39; + disqus_shortname + &#39;.disqus.com/embed.js&#39;;
+    (document.getElementsByTagName(&#39;head&#39;)[0] || document.getElementsByTagName(&#39;body&#39;)[0]).appendChild(dsq);
+  }());
+&lt;/script&gt;
+</code></pre>
+
+<p>上面代码添加到页面就可使用评论功能了。</p>
+
+<h3 id="toc_0">通过设置disqus_url参数标识当前页面</h3>
+
+<p>但是Disqus是按照页面url来生成评论的， 什么意思呢？就是在提交评论时默认时按照你当前评论的文章的url作为key存储评论， 也就是通过javascript去window.location.href作为值。一般情况不同文章的访问地址肯定是不一样的， 使用也不会出现问题。但是我们经常在博客首页放最近发表的文章， 也就是相同的博客地址对应不同文章， Disqus默认按照url存储和读取评论就会导致针对不同文章的评论混淆在一起。解决这个问题只需要在设置一个 <strong>disqus_url</strong> 就可以了。看如下配置：</p>
+
+<pre><code class="language-javascript">&lt;script type=&quot;text/javascript&quot;&gt;
+  var disqus_shortname = &#39;test&#39;; //这个就是你唯一的标识
+  var disqus_url = window.location.origin + &#39;post.url&#39;; //域名加上文章路径，也可以是文章标题， 总之能区分不同文章就行
+  (function () {
+    var dsq = document.createElement(&#39;script&#39;); dsq.type = &#39;text/javascript&#39;; dsq.async = true;
+    dsq.src = &#39;http://&#39; + disqus_shortname + &#39;.disqus.com/embed.js&#39;;
+    (document.getElementsByTagName(&#39;head&#39;)[0] || document.getElementsByTagName(&#39;body&#39;)[0]).appendChild(dsq);
+  }());
+&lt;/script&gt;
+</code></pre>
+
+<p>加上disqus_url参数后Disqus就不在取浏览器url作为评论标识了， 而是使用你设置url。注意， 这里的url要用完整http开头， 不然不能识别。</p>
+
+<h3 id="toc_1">其他的参数</h3>
+
+<ul>
+<li><strong>disqus_shortname</strong>: 上面说到过你申请评论的唯一标识， 必填项。</li>
+<li><strong>disqus_identifier</strong>: 当前页面的标识， 没设置就使用url。但道理是用这个来标识不同页面， 但是我没有设置成功。</li>
+<li><strong>disqus_title</strong>: 评论标题， 这个是Disqus后台用的， 如果没有就去html页面的title.</li>
+<li><strong>disqus_url</strong>: 当前页面的url, 没有设置就用window.location.href。上面例子就是用这个参数。</li>
+<li><strong>disqus_category_id</strong>: 后台设置的category, 在settings/advanced/里面设置。不知道用途是什么。</li>
+<li><strong>disqus_disable_mobile</strong>: 是否开启移动设备支持。</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Html5视频播放器Video.js使用]]></title>
+    <link href="./14914443695907.html"/>
+    <updated>2017-04-06T10:06:09+08:00</updated>
+    <id>./14914443695907.html</id>
+    <content type="html"><![CDATA[
+<p><a href="http://www.videojs.com/">video.js</a>是一个HTML5媒体播放器， 在HTML5基本video功能上扩展了很多功能，例如， 快进，播放多少秒等等。这些都可以通过js来控制。</p>
+
+<span id="more"></span><!-- more -->
+
+<p>基本使用如下：</p>
+
+<ul>
+<li>下载video.js, 下载地址：<a href="http://www.videojs.com/">http://www.videojs.com</a>；不过建议使用一些免费的cdn较好。</li>
+<li>引入video.js。 video.js没有依赖其他的库可以直接引入， 如果你使用<a href="http://modernizr.com/">Modernizr</a>调整兼容性的话， 在页面任何位置引入都行；如果没有使用<a href="http://modernizr.com/">Modernizr</a>， 你只能在<head>里面引用。</li>
+<li>使用video.js. 代码如下：</li>
+</ul>
+
+<pre><code>&lt;video id=&quot;MY_VIDEO_1&quot; class=&quot;video-js vjs-default-skin vjs-big-play-centered&quot; controls
+  preload=&quot;none&quot; poster=&quot;http://www.videojs.com/img/poster.jpg&quot;
+  data-setup=&quot;{}&quot;&gt;
+   &lt;source src=&quot;http://vjs.zencdn.net/v/oceans.mp4&quot; type=&#39;video/mp4&#39;&gt;
+   &lt;source src=&quot;http://vjs.zencdn.net/v/oceans.webm&quot; type=&#39;video/webm&#39;&gt;
+   &lt;p class=&quot;vjs-no-js&quot;&gt;To view this video please enable JavaScript, and consider upgrading to a web browser that &lt;a href=&quot;http://videojs.com/html5-video-support/&quot; target=&quot;_blank&quot;&gt;supports HTML5 video&lt;/a&gt;&lt;/p&gt;
+&lt;/video&gt;
+</code></pre>
+
+<p>加入代码页面就可以使用了。</p>
+
+<p>有几点需要说明一下:</p>
+
+<h4 id="toc_0">播放按钮居中</h4>
+
+<p>默认样式播放按钮在左上角， 可以加上 <strong>vjs-big-play-centered</strong> 类，就可以是播放按钮居中了。</p>
+
+<h4 id="toc_1">视频宽高自适应</h4>
+
+<p>有两种方式使视频自适应， 第一种是设置width:100%, height:100%</p>
+
+<pre><code>&lt;video id=&quot;MY_VIDEO_1&quot; class=&quot;video-js vjs-default-skin vjs-big-play-centered&quot;
+    width=&quot;100%&quot;
+    height=&quot;100%&quot;
+    style=&quot;object-fit:fill;&quot; //视频缩放比例设置为填充，默认用的contain保证宽高比例
+    controls
+    preload=&quot;none&quot; 
+    poster=&quot;http://www.videojs.com/img/poster.jpg&quot;
+    data-setup=&quot;{}&quot;&gt;
+
+    ...
+</code></pre>
+
+<p>第二种，使用js在你resize窗口时设置video大小。</p>
+
+<pre><code>&lt;script type=&quot;text/javascript&quot;&gt;
+    videojs(&quot;MY_VIDEO_1&quot;).ready(function(){
+      var myPlayer = this;    
+      var aspectRatio = 9/16; 
+
+      function resizeVideoJS(){
+        var width = document.getElementById(myPlayer.id()).parentElement.offsetWidth;
+        myPlayer.width(width).height( width * aspectRatio );
+      }
+
+      resizeVideoJS(); 
+      window.onresize = resizeVideoJS; 
+    });
+ &lt;/script&gt;
+</code></pre>
+
+<h4 id="toc_2">遇到的兼容问题</h4>
+
+<p>不知道是否是我使用不当， 在Window版Chrome上没有进度条显示， 在小米手机中不能最大化。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Rails的accepts_nested_attributes_for使用和原理]]></title>
+    <link href="./14914444332999.html"/>
+    <updated>2017-04-06T10:07:13+08:00</updated>
+    <id>./14914444332999.html</id>
+    <content type="html"><![CDATA[
+<p>当有两个存在one_to_one或者one_to_many的时候，我们可以用accepts_nested_attributes_for来更新关联对象。例如：<br/>
+有Article对象模型， 存在一个author关联和多个comments关联</p>
+
+<span id="more"></span><!-- more -->
+
+<pre><code class="language-ruby">  class Article &lt; ActiveRecord::Base
+    has_one :author
+    has_many :comments
+    ...
+  end
+</code></pre>
+
+<p>在没有accepts_nested_attributes_for的时候， 要更新author和comments需要两步， 先创建子对象然后添加到当前对象，最麻烦的不是这个而是form表单，<br/>
+你需要手动为关联对象设置名字, 代码如下：</p>
+
+<pre><code class="language-ruby">  &lt;%= form_for @article do |f|
+    author: &lt;%= f.text_field &#39;article[:author][:name]&#39; %&gt;
+    comments: &lt;%= f.text_field &#39;article[:comments][][:content]&#39; %&gt;
+  &lt;% end %&gt;
+</code></pre>
+
+<p>使用accepts_nested_attributes_for之后， 事情将被变得简单很多：</p>
+
+<pre><code class="language-ruby">  class Article &lt; ActiveRecord::Base
+    has_one :author
+    has_many :comments
+    
+    accepts_nested_attributes_for :author, :comments #设置nested属性
+  end
+
+  class ArticlesController &lt; ApplicationController
+    def create
+      @article = Article.new params[:article]
+      @article.save
+    end
+  end
+
+  &lt;%= form_for @article do |f|
+    &lt;%= f.fields_for :author do |builder|%&gt; #fields_for来设置nested关联
+      author: &lt;%= builder.text_field :name %&gt;
+    &lt;% end %&gt;
+
+    &lt;%= f.fields_for :comments do |builder|%&gt;
+      comments: &lt;%= builder.text_field :content %&gt;
+    &lt;% end %&gt;
+  end %&gt;
+</code></pre>
+
+<p>可以看到整个事情变得简单不少了。</p>
+
+<p><strong>那么， 使用accepts_nested_attributes_for之后发生什么了呢？</strong></p>
+
+<p>Rails3之后的新特性accepts_nested_attributes_for属于ActiveRecord::NestedAttributes module, 调用该方法之后在Article上做以下几件事情：</p>
+
+<pre><code>1 检查默认参数:allow_destroy, :reject_if, :limit, :update_only，同时将默认参数分
+  别与author，comments绑定
+2 将author和comments的autosave选项设置为true
+3 设置autosave相关的callback
+4 在Article中定义author_attributes=和comments_attributes=实例方法。
+  当然之前先要检查xxx_attributes=方法是否存在， 如果存在删除重新定义
+</code></pre>
+
+<h3 id="toc_0">accepts_nested_attributes_for参数</h3>
+
+<p>allow_destroy: 是否能删除关联对象， 默认设为false</p>
+
+<p>reject_if: 检查关联属性xxx_attributes值， 返回true时属性会被忽略。接受Proc，Symbol和:all_blank。</p>
+
+<p>limit: has_many关系时起作用， 能处理的关联对象的最大数量。接受Proc, Symbol和数字， proc和symbol关联的方法需要返回数字。</p>
+
+<p>update_only: has_one关系时起作用， 是否更新关联对象，默认设置为false。设置为true时， 不管参数中是否有id，都更新关联对象。</p>
+
+<h3 id="toc_1">更新</h3>
+
+<p>如何参数中有&#39;id&#39;或者:id则更新否则创建新对象关联， 通过当前类的Reflection对象上调用assign_attributes(attributes)来更新。</p>
+
+<p>其中， limit对has_many一次处理多少对象做出限制， 如果超出范围抛出TooManyRecordsy异常；update_only设为true时has_one关联都会更新关联对象。</p>
+
+<pre><code>params = { article: { author: { id: &#39;2&#39;, name: &#39;Sam&#39; }} }
+article.update params[:article]
+
+params = { article: { comments: [{ id: &#39;1&#39;, content: &#39;...&#39; }, { id: &#39;2&#39;, content: &#39;...&#39; }}] }
+article.update params[:article]
+</code></pre>
+
+<h3 id="toc_2">删除</h3>
+
+<p>当allow_destroy设置为true是， 就可以接受一个_destroy参数，该参数值为true时并且id存在， 关联对象就会删除；如果没有给出id， 就会忽略。<br/>
+删除方式是通过调用autosave关联的mark_for_destruction来标记关联对象。因此所有删除均要在当前对象save之后起效。</p>
+
+<pre><code>params = { article: { author: { id: &#39;2&#39;, name: &#39;Sam&#39;， _destroy: &#39;1&#39; }} }
+article.update params[:article]
+article.save
+</code></pre>
+
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Javascript中类，名字空间和类的继承的实现 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='javascript.html'>javascript</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Javascript中类，名字空间和类的继承的实现</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/10/12">2014/10/12</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>最近在做一个微信项目，由于微信加载页面很慢，所以像jquery这些成熟的js库显得是个庞然大物。没办只能自己动手实现一些基础的东西，<br/>
+首先，需要实现最基础javascript的类定义和类的继承，其次是名字空间。这几个是方便我们管理和组织代码最基础的，当然不是必须的，你也可以以最少代码方式将js写在你需要的地方；作为一个完整的项目我不建议这做。来看看我的具体实现吧。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">名字空间</h3>
+
+<p>Javascript中没有namespace概念，稍微面向对象一点，所有的对象跑在顶级作用域下是个很大的麻烦。所以首先要解决这个问题，实现的方式以一个空对象作为空间名字，如： BH.file.image.Upload等。我们在Upload空间下定义自己的类。</p>
+
+<p>具体实现：</p>
+
+<pre><code>省略代码段...
+
+namespace: function (nstr) {
+      var fns = nstr.split(&#39;.&#39;), pns = BH;
+      if (fns[0] == &#39;BH&#39;) {
+        fns.shift();
+      }
+      for (var i = 0; i &lt;= fns.length - 1; i++) {
+        pns[fns[i]] = pns[fns[i]] || {};
+        pns = pns[fns[i]];
+      }
+      return pns;
+    }
+
+省略代码段...
+</code></pre>
+
+<p>方法很简单，一次遍历以&#39;.&#39;分割的空间名，然后设置为空对象即可，当然一定要讲起始空间保存这个是关键。最后返回最后一个空间作为当前对象。</p>
+
+<p>使用方法：<br/><br/>
+BH.namespace(&#39;BH.file.image.Upload&#39;);<br/><br/>
+BH.file.image.Upload // 为空对象{}</p>
+
+<h3 id="toc_1">类定义</h3>
+
+<p>严格的讲javascript是没有类这个概念的，一切都是对象。我们为了面向对象方便，运用各种设计模式实现与其他语言中等同的类。这些实现方式不少于5种，比如：工厂模式，构造函数模式，原型模式等等，各有利弊。我构造函数和原型组合的方式。</p>
+
+<p>实现如下：</p>
+
+<pre><code>  defines: function (nstr, prototype) {
+      var nstr = nstr.split(&#39;.&#39;),
+          fn = nstr.pop(),
+          ns = BH.namespace(nstr.join(&#39;.&#39;));
+      ns[fn] = prototype.constructor || function () {}; //设置构造函数为constructor，或者空函数
+      ns[fn].prototype = prototype; //设置prototype
+      prototype.constructor = ns[fn]; //设置prototype的constructor属性指向当前函数而不是Object
+      return ns[fn];
+  }
+</code></pre>
+
+<p>使用方法：</p>
+
+<pre><code>BH.defines(&#39;BH.file.image.Upload&#39;, {
+  constructor: function() {}, //定义构造函数
+  A: function() {},
+  attrB: &#39;attr&#39;
+});
+</code></pre>
+
+<h3 id="toc_2">类继承</h3>
+
+<p>和类定义一样，javascript中也是用设计模式实现等同其他语言的继承方式。实现方式很多，我才用目前认为是最好的一种方式--寄生组合式继承。这个也是YUI中实现继承的方式。</p>
+
+<p>实现如下：</p>
+
+<pre><code>extend: function (sub, parent, options) {
+  var emptyClass = function () {};
+  emptyClass.prototype = parent.prototype;
+  sub.prototype = new emptyClass();
+  sub.prototype.constructor = sub;
+  sub.superclass = superc.prototype;
+
+  if (options) {
+    for (var i in options) {
+      subc.prototype[i]=options[i];
+    }
+  }
+
+  return sub;
+}
+</code></pre>
+
+<p>采用一个空函数做为构造函数来置空父类的构造函数，同时继承父类的prototype，这样做的目的为了避免引用数据类共享带来的问题。然后用options覆盖父类属性和方法，如果需要的话。</p>
+
+<p>使用方法：<br/><br/>
+BH.defines(&#39;BH.a.B&#39;);<br/><br/>
+BH.extend(BH.a.B, BH.a.C { name: &#39;B&#39;});</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14913797913804.html" title="Previous Post: Javascript新接口">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914440114235.html" title="Next Post: 记一枚不错的Gem：wechat-rails">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         记一枚不错的Gem：wechat-rails - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='ruby.html'>ruby</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">记一枚不错的Gem：wechat-rails</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/9/27">2014/9/27</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>很少因为某个gem写博客觉得只是某个工具，最近做微信发下一枚不错的gem, 不得不记一笔。</p>
+
+<p>wechat-rails是一个微信开发者api接口的gem包，可以在rails和命令行中使用。它的主要优点有这么几个：</p>
+
+<ol>
+<li>提供命令行调用方式，大大方便了调试</li>
+<li>DSL的事件处理方式，让开发者更关注具体业务逻辑</li>
+<li>最重要的作者对ruby的使用很熟练，gem设计很简洁明了</li>
+</ol>
+
+<p>安装和使用自己去看他的readme不再这里重复了，我们来看看使用的几个要点。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">配置文件</h3>
+
+<p>命令行和rails的配置不一样，命令行需要在自己的home目录下面建立一个~/.wechat.yml文件，access_token是一个当前用户具有读写权限的文件目录，注意指定到具体的文件，用于存放获取的access_token。</p>
+
+<pre><code>  appid: &quot;my_appid&quot;
+  secret: &quot;my_secret&quot;
+  access_token: &quot;/var/tmp/wechat_access_token&quot;
+</code></pre>
+
+<p>rails配置是config/wechat.yml, 类似database.yml需要为每个环境分别配置。</p>
+
+<pre><code>default: &amp;default
+  appid: &quot;app_id&quot;
+  secret: &quot;app_secret&quot;
+  token:  &quot;app_token&quot;
+  access_token: &quot;/var/tmp/wechat_access_token&quot;
+
+production: 
+  appid: &lt;%= ENV[&#39;WECHAT_APPID&#39;] %&gt;
+  secret: &lt;%= ENV[&#39;WECHAT_APP_SECRET&#39;] %&gt;
+  token:   &lt;%= ENV[&#39;WECHAT_TOKEN&#39;] %&gt;
+  access_token:  &lt;%= ENV[&#39;WECHAT_ACCESS_TOKEN&#39;] %&gt;
+
+staging: 
+  &lt;&lt;: *default
+
+development: 
+  &lt;&lt;: *default
+
+test: 
+  &lt;&lt;: *default
+</code></pre>
+
+<h3 id="toc_1">rails中使用</h3>
+
+<p>如果controller需要使用微信api, 可以直接在controller中声明。</p>
+
+<pre><code>class WechatsController &lt; ApplicationController
+  wechat_responder #将weichat-rails include进来
+
+  on :text do |request, content|
+    request.reply.text &quot;echo: #{content}&quot; #Just echo
+  end
+
+  on :text, with:&quot;help&quot; do |request, help|
+    request.reply.text &quot;help content&quot; #回复帮助信息
+  end
+
+  on :fallback, respond: &quot;fallback message&quot;  
+end
+</code></pre>
+
+<p>上面的代码，wechat_responder用于声明当前controller接受微信回调，one :text 代码块用于声明处理微信不同类型的回调消息，但是当两声类型明相同是只调用第一声明的代码块。fallback是默认处理方式。</p>
+
+<h3 id="toc_2">rails是如何调用api接口的</h3>
+
+<p>上面代码只是涉及到如何响应微信的回调请求，如果你想使用其他高级接口，比如：菜单修改，用户消息查询。怎么办呢？看看下面代码：</p>
+
+<pre><code>if defined? ActionController::Base
+  class ActionController::Base
+    def self.wechat_responder opts={}
+      self.send(:include, Wechat::Responder)
+      if (opts.empty?)
+        self.wechat = Wechat.api
+        self.token = Wechat.config.token
+      else
+        self.wechat = Wechat::Api.new(opts[:appid], opts[:secret], opts[:access_token])
+        self.token = opts[:token]
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>看到没有self.wechat = Wechat.api这个就是微信api接口实例，在当前controller中使用wechat就可以。如，获得关注者列表：</p>
+
+<pre><code>wechat.users
+</code></pre>
+
+<h3 id="toc_3">wechat-rails是如何缓存access_token?</h3>
+
+<p>wechat-rails使用文件来缓存access_token， 也就是wechat.yml中配置的文件路径。wechat-rails会每次先读取这个文件的内容，当出现访问异常时，说明access_token过期了，就需要重新请求微信然后将新的access_token写入该文件。</p>
+
+<p>这里有个问题，当我们在服务器集群上就不大好办了，除非你将access_token缓存文件置于共享目录。这样访问效率就低了。这里我的做法是使用memcache作为缓存，需要略作改进：</p>
+
+<pre><code>Wechat.class_eval do
+  # 使用数据库存储微信appid, secret和token信息，同时支付多个微信号。
+  # 因此，之前使用wechat.yml方式不再被支持
+  def self.api
+    raise &#39;we use database store token information, please use \&#39;set_weixin_api :app_name\&#39; inestad !&#39;
+  end
+end
+
+Wechat::AccessToken.class_eval do
+  def cache_key
+    &quot;weixin/#{appid}&quot;
+  end
+
+  # 使用Rails缓存来存储token, 覆盖原本的access_token使用文件存储方式
+  def token
+    @token_data = Rails.cache.read(cache_key) || refresh
+    return valid_token(@token_data)
+  end
+
+  def refresh
+    data = client.get(&quot;token&quot;, params:{grant_type: &quot;client_credential&quot;, appid: appid, secret: secret})
+    Rails.cache.write cache_key, data, expires_in: data[&quot;expires_in&quot;]
+    return @token_data = data
+  end
+end
+</code></pre>
+
+<p>将上面的代码至于config/initializers下面，就可以了。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914439620917.html" title="Previous Post: Javascript中类，名字空间和类的继承的实现">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914440431935.html" title="Next Post: Swift中的闭包">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

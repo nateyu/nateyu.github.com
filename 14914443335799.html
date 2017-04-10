@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Web响应式设计笔记整理 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='html_css.html'>html/css</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Web响应式设计笔记整理</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/6/22">2014/6/22</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>最近在开发web相关功能， 整理下相关知识点。主要内容来自《响应式Web设计HTML5和CSS3实战》笔记整理。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">响应式设计栅格系统</h3>
+
+<ol>
+<li>Semantic (<a href="http://semantic.gs">http://semantic.gs</a>);</li>
+<li>Skeleton (<a href="http://getskeleton.com">http://getskeleton.com</a>);</li>
+<li>Less Framework (<a href="http://lessframework.com">http://lessframework.com</a>);</li>
+<li>1140 CSS Grid (<a href="http://cssgrid.net">http://cssgrid.net</a>);</li>
+<li>Columnal (<a href="http://www.columnal.com)%E3%80%82">http://www.columnal.com)。</a></li>
+</ol>
+
+<h3 id="toc_1">在线实例</h3>
+
+<ul>
+<li>响应式设计： <a href="http://mediaqueri.es">http://mediaqueri.es</a></li>
+<li>3D动画：<a href="http://demo.marcofolio.net/3d_animation_css3">http://demo.marcofolio.net/3d_animation_css3</a></li>
+</ul>
+
+<h3 id="toc_2">窗口大小调试工具</h3>
+
+<ul>
+<li>IE: Microsoft Internet Explorer Developer Toolbar(<a href="http://www.microsoft.com/download/en/details.aspx?id=18359">http://www.microsoft.com/download/en/details.aspx?id=18359</a>)</li>
+<li>Safari: ResizeMe(<a href="http://web.me.com/aaronholla/Safari_Extensions/ResizeMe.html">http://web.me.com/aaronholla/Safari_Extensions/ResizeMe.html</a>) , Resize(<a href="http://resizeSafari.com">http://resizeSafari.com</a>)</li>
+<li>Firefox: Firesizer(<a href="https://addons.mozilla.org/en-US/firefox/addon/firesizer/">https://addons.mozilla.org/en-US/firefox/addon/firesizer/</a>)</li>
+<li>Chrome:  Windows Resizer(<a href="https://chrome.google.com/webstore/detail/kkelicaakdan-">https://chrome.google.com/webstore/detail/kkelicaakdan-</a> hinjdeammmilcgefonfh)</li>
+</ul>
+
+<h3 id="toc_3">媒体查询：</h3>
+
+<p>媒体查询支持的浏览器：Firefox 3.6+、Safari 4+、Chrome 4+、 Opera 9.5+、iOS Safari 3.2+、Opera Mobile 10+、Android 2.1+和 Internet Explorer 9+</p>
+
+<p>css2 link标签媒体查询：</p>
+
+<pre><code>&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;screen-styles.css”&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait)&quot; href=&quot;portrait- screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;not screen and (orientation: portrait)&quot; href=&quot;portrait- screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait) and (min-width: 800px)&quot; href=&quot;800wide-portrait-screen.css&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;screen and (orientation: portrait) and (min-width: 800px), projection&quot; href=&quot;800wide-portrait-screen.css&quot; /&gt;
+</code></pre>
+
+<p>css3样式表媒体查询：</p>
+
+<pre><code>@media screen and (max-device-width: 400px) { h1 { color: green } }
+@import url(&quot;phone.css&quot;) screen and (max-width:360px); 
+</code></pre>
+
+<p><strong>媒体查询内容</strong><br/><br/>
+width: 窗口宽度。<br/><br/>
+height: 窗口高度。<br/><br/>
+device-width: 设备屏幕的宽度<br/><br/>
+device-height: 设备屏幕的高度<br/><br/>
+orientation: 检查设备处于横向还是纵向。<br/><br/>
+aspect-ratio:基于窗口宽度和高度的宽高比。 例如：aspect-ratio: 16/9。<br/><br/>
+device-aspect-ratio: 设备渲宽度和高度的宽高比。<br/><br/>
+color: 每种颜色的位数。例如 min-color: 16 会检测设备是否拥有 16 位颜色。<br/><br/>
+color-index:设备的颜色索引表中的颜色数。值必须是非负整数。<br/><br/>
+monochrome:检测单色帧缓冲区中每像素所使用的位数。值必须是非负整数,如：monochrome: 2。 <br/>
+resolution:用来检测屏幕或打印机的分辨率,如 min-resolution: 300dpi。还可以接受每厘米像素点数的度量值,- 如 min-resolution: 118dpcm。<br/><br/>
+scan:电视机的扫描方式,值可设为 progressive(逐行扫描)或 interlace(隔行扫描)。如 720p HD 电视(720p 的 p 即表明是逐行扫描)匹配 scan:progressive，而 1080i HD 电视(1080i 中的 i 表明是隔行扫描)匹配 - scan: interlace。<br/><br/>
+grid:用来检测输出设备是网格设备还是位图设备。   </p>
+
+<p>IE8以下媒体查询：Respond.js(<a href="https://github.com/scottjehl/Respond)%E6%98%AF%E4%B8%BA">https://github.com/scottjehl/Respond)是为</a> Internet Explorer 8及更低版本增加 媒体查询支持的最快的 JavaScript 工具,但它目前无法解析 CSS 的@import 命令。</p>
+
+<h3 id="toc_4">Reset CSS（<a href="http://www.cssreset.com/%EF%BC%89">http://www.cssreset.com/）</a></h3>
+
+<p>HTML4<br/><br/>
+1. <a href="http://meyerweb.com/eric/tools/css/reset/">http://meyerweb.com/eric/tools/css/reset/</a><br/><br/>
+2. <a href="http://simplebits.com">http://simplebits.com</a><br/><br/>
+3. <a href="http://yui.yahooapis.com/3.17.2/build/cssreset/cssreset-min.css">http://yui.yahooapis.com/3.17.2/build/cssreset/cssreset-min.css</a></p>
+
+<p>HTML5<br/><br/>
+normalize.css(<a href="http://necolas.github.com/normalize.css/">http://necolas.github.com/normalize.css/</a>)</p>
+
+<p>阻止移动浏览器自动调整页面大小:</p>
+
+<pre><code>&lt;meta name=&quot;viewport&quot; content=&quot;initial-scale=1.0, user-scalable=no&quot; /&gt; user-scalable=no 即是禁止缩放。
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1.0&quot; /&gt; 浏览器将按照其窗口的实际大小来渲染页面, 将宽度设置为设备宽度。
+</code></pre>
+
+<h3 id="toc_5">流体布局</h3>
+
+<p>使用百分比布局创建流动的弹性界面,同时 使用媒体查询来限制元素的变动范围。将这两者组合到一起构成了响应 式设计的核心,基于此可以创造出真正完美的设计。 </p>
+
+<p>固定宽度改为百分比：</p>
+
+<pre><code> 目标元素宽度÷上下文元素宽度=百分比宽度
+</code></pre>
+
+<p>用em替换px:<br/><br/>
+1.是那 些使用 Internet Explorer 6 的用户也将能够缩放文字<br/><br/>
+2.如果我们给 <body>标签设置文字大小为 100%,给其他文字都使用相对单位 em,那这些文字都会受 body 上的初始声明的影响。这样做的好处就是,如果在完成了所有文字排版后,客户又 提出将页面文字统一放大一点,我们就可以只修改 body 的文字大小,其他所有文字也会 相应变大</p>
+
+<blockquote>
+<p>em 究竟是什么? em 是书面形式的大写字母“M”的简称,发音和 M 相同。以前,“M” 常被用来测定某种字体的大小,因为它是英文字母中最大(最宽)的字 母。如今,em 作为一个测量单位,指的是特定字母的宽度和高度相对 于特定字体磅值的比例。 </p>
+</blockquote>
+
+<p>弹性图片:</p>
+
+<pre><code>img,object,video,embed { max-width: 100%; } 
+</code></pre>
+
+<p>网页语言列表：<br/>
+<a href="http://www.iana.org/">http://www.iana.org/</a> assignments/language-subtag-registry</p>
+
+<h3 id="toc_6">解决跨浏览器问题</h3>
+
+<p>HTML5/CSS3修正：Modernizr(<a href="http://www.modernizr.com)%E3%80%82">http://www.modernizr.com)。</a><br/><br/>
+IE6、7、8 追加min/max媒体查询功能:  Respond.js(<a href="https://github.com/scottjehl/Respond">https://github.com/scottjehl/Respond</a>)<br/><br/>
+将导航链接转换为下拉菜单：<br/><br/>
+1. <a href="http://webdesignerwall.com/tutorials/css-responsive-navigation-menu">http://webdesignerwall.com/tutorials/css-responsive-navigation-menu</a><br/><br/>
+2. <a href="http://webdesignerwall.com/demo/responsive-menu/">http://webdesignerwall.com/demo/responsive-menu/</a></p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914442671709.html" title="Previous Post: 网页字体">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914443947913.html" title="Next Post: Disqus评论参数说明">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

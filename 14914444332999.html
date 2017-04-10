@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Rails的accepts_nested_attributes_for使用和原理 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='ruby.html'>ruby</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Rails的accepts_nested_attributes_for使用和原理</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/6/15">2014/6/15</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>当有两个存在one_to_one或者one_to_many的时候，我们可以用accepts_nested_attributes_for来更新关联对象。例如：<br/>
+有Article对象模型， 存在一个author关联和多个comments关联</p>
+
+<span id="more"></span><!-- more -->
+
+<pre><code class="language-ruby">  class Article &lt; ActiveRecord::Base
+    has_one :author
+    has_many :comments
+    ...
+  end
+</code></pre>
+
+<p>在没有accepts_nested_attributes_for的时候， 要更新author和comments需要两步， 先创建子对象然后添加到当前对象，最麻烦的不是这个而是form表单，<br/>
+你需要手动为关联对象设置名字, 代码如下：</p>
+
+<pre><code class="language-ruby">  &lt;%= form_for @article do |f|
+    author: &lt;%= f.text_field &#39;article[:author][:name]&#39; %&gt;
+    comments: &lt;%= f.text_field &#39;article[:comments][][:content]&#39; %&gt;
+  &lt;% end %&gt;
+</code></pre>
+
+<p>使用accepts_nested_attributes_for之后， 事情将被变得简单很多：</p>
+
+<pre><code class="language-ruby">  class Article &lt; ActiveRecord::Base
+    has_one :author
+    has_many :comments
+    
+    accepts_nested_attributes_for :author, :comments #设置nested属性
+  end
+
+  class ArticlesController &lt; ApplicationController
+    def create
+      @article = Article.new params[:article]
+      @article.save
+    end
+  end
+
+  &lt;%= form_for @article do |f|
+    &lt;%= f.fields_for :author do |builder|%&gt; #fields_for来设置nested关联
+      author: &lt;%= builder.text_field :name %&gt;
+    &lt;% end %&gt;
+
+    &lt;%= f.fields_for :comments do |builder|%&gt;
+      comments: &lt;%= builder.text_field :content %&gt;
+    &lt;% end %&gt;
+  end %&gt;
+</code></pre>
+
+<p>可以看到整个事情变得简单不少了。</p>
+
+<p><strong>那么， 使用accepts_nested_attributes_for之后发生什么了呢？</strong></p>
+
+<p>Rails3之后的新特性accepts_nested_attributes_for属于ActiveRecord::NestedAttributes module, 调用该方法之后在Article上做以下几件事情：</p>
+
+<pre><code>1 检查默认参数:allow_destroy, :reject_if, :limit, :update_only，同时将默认参数分
+  别与author，comments绑定
+2 将author和comments的autosave选项设置为true
+3 设置autosave相关的callback
+4 在Article中定义author_attributes=和comments_attributes=实例方法。
+  当然之前先要检查xxx_attributes=方法是否存在， 如果存在删除重新定义
+</code></pre>
+
+<h3 id="toc_0">accepts_nested_attributes_for参数</h3>
+
+<p>allow_destroy: 是否能删除关联对象， 默认设为false</p>
+
+<p>reject_if: 检查关联属性xxx_attributes值， 返回true时属性会被忽略。接受Proc，Symbol和:all_blank。</p>
+
+<p>limit: has_many关系时起作用， 能处理的关联对象的最大数量。接受Proc, Symbol和数字， proc和symbol关联的方法需要返回数字。</p>
+
+<p>update_only: has_one关系时起作用， 是否更新关联对象，默认设置为false。设置为true时， 不管参数中是否有id，都更新关联对象。</p>
+
+<h3 id="toc_1">更新</h3>
+
+<p>如何参数中有&#39;id&#39;或者:id则更新否则创建新对象关联， 通过当前类的Reflection对象上调用assign_attributes(attributes)来更新。</p>
+
+<p>其中， limit对has_many一次处理多少对象做出限制， 如果超出范围抛出TooManyRecordsy异常；update_only设为true时has_one关联都会更新关联对象。</p>
+
+<pre><code>params = { article: { author: { id: &#39;2&#39;, name: &#39;Sam&#39; }} }
+article.update params[:article]
+
+params = { article: { comments: [{ id: &#39;1&#39;, content: &#39;...&#39; }, { id: &#39;2&#39;, content: &#39;...&#39; }}] }
+article.update params[:article]
+</code></pre>
+
+<h3 id="toc_2">删除</h3>
+
+<p>当allow_destroy设置为true是， 就可以接受一个_destroy参数，该参数值为true时并且id存在， 关联对象就会删除；如果没有给出id， 就会忽略。<br/>
+删除方式是通过调用autosave关联的mark_for_destruction来标记关联对象。因此所有删除均要在当前对象save之后起效。</p>
+
+<pre><code>params = { article: { author: { id: &#39;2&#39;, name: &#39;Sam&#39;， _destroy: &#39;1&#39; }} }
+article.update params[:article]
+article.save
+</code></pre>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914443695907.html" title="Previous Post: Html5视频播放器Video.js使用">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914444636077.html" title="Next Post: 前端开步骤">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

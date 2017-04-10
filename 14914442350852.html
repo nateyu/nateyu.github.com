@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Git中的撤销操作 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='other.html'>other</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Git中的撤销操作</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/7/20">2014/7/20</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>在使用Git的时候，有时候我们需要对已有的修改进行撤销操作， 接下来介绍一些基本的撤消操作相关的命令。</p>
+
+<h3 id="toc_0">git commit --amend修改最后一次提交</h3>
+
+<p>这个命名用于修改你最后的一次提交。如果在commit之后发现自己写错说明，或者漏掉某个文件，这个时候你可以用--amend重新提交一次。--amend使用与你刚才提交相同的快照进行修改，就相当于手动修改刚才的提交。<br/>
+当你执行--amend时，git会启动你的编辑器，你可以修改刚才的注释，如果有遗忘的文件没有提交，可以先缓存然后在执行--amend。</p>
+
+<pre><code class="language-ruby">git add test.rb
+git commit --amend
+</code></pre>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_1">撤销已经缓存的文件</h3>
+
+<p>--amend命令是修改已经提交的内容。当文件不小心被缓存之后，特别当你使用git add .之后，发现很多文件不是我们要提交的。这个时候你可以用：</p>
+
+<pre><code class="language-ruby">git reset HEAD &lt;file&gt;
+</code></pre>
+
+<p>取消文件的缓存，但是文件修改的内容不会撤销。</p>
+
+<h3 id="toc_2">撤销已经修改的文件内容</h3>
+
+<p>如果我们需要撤销已经修改的内容，就需要使用, git checkout filename</p>
+
+<pre><code class="language-ruby">git checkout test.rb
+</code></pre>
+
+<p>现在test.rb所有的修改都被撤回到当前分支HEAD时的修改了。</p>
+
+<h3 id="toc_3">回滚当前版本</h3>
+
+<p>当我们回滚到历史某一个版本时，我们可以使用git reset命名。一般我们当前指针，也就是branch_name已经HEAD所指向的那个节点，是我们正在使用的版本。如果要回到当前版本之前某个历史版本，就可以使用git reset [--hard|soft|mixed|merge|keep] [<commit>或HEAD]</p>
+
+<ol>
+<li>--hard, 重置当前工作目录和索引。也就是说，你本地修改内容都会丢弃，并且HEAD指向<commit>。</li>
+<li>--soft, 当前工作目录和和索引不会改变，仅仅将HEAD指向<commit>。也就是说所有的修改，缓存都不变，和你没有reset之前是一样的。</li>
+<li>--mixed， 当前工作目录，但是或重置索引。也就是说，你的修改内容不会变化，但是会取消缓存。</li>
+<li>--merge, --keep用的不多,不说了。</li>
+</ol>
+
+<p>其中<commit>默认是最后一次commit, 模式默认是mixed。</p>
+
+<h3 id="toc_4">撤销某次提交</h3>
+
+<p>当你发现某次提及有问题，需要撤销时可以使用git revert [<commit>或者HEAD]。revert可以说是commit的逆操作， 你commit做了哪些操作，revert就相反的执行; commit修改文件，添加文件，revert就删除文件，并且撤销修改，然后产生一次提交。</p>
+
+<pre><code>git revert 226d852d0c0
+</code></pre>
+
+<p>226d852d0c0提交就会被一次新的提交重置掉。</p>
+
+<p>它与reset --hard的区别是，reset时历史上回朔，在这个历史区间内的所有提交都将的丢弃；而revert则是正对某次提交进行一次逆向操作。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914442067467.html" title="Previous Post: Linux磁盘管理LVM原理">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914442671709.html" title="Next Post: 网页字体">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

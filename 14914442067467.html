@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Linux磁盘管理LVM原理 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='linux.html'>linux</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Linux磁盘管理LVM原理</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/8/10">2014/8/10</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <blockquote>
+<p>LVM是Logical Volume Manager逻辑磁盘卷的简称，它是Linux环境下对磁盘分区管理的一种机制。它可以在运行的系统直接调整分区空间大小，<br/>
+是一种安全无痛的操作。</p>
+</blockquote>
+
+<p>写这个的原因是经历过一次很无奈的系统故障，运行数据库的机器磁盘写满，而系统的报警通知没有发出(各种喜剧性的巧合真实的凑到一起了)，导致整体应用无法使用。幸亏之安装系统使用了LVM，这个故障很快就解决。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">什么是LVM?</h3>
+
+<p>LVM是介于物理存储分区和文件系统之间的逻辑分区，他将一个或者多个物理分区(如:磁盘或者RAID)分为若干个最小逻辑单元，LVM分区建立在这些最小的逻辑单元上，文件系统建立LVM逻辑分区之上，当文件系统空间不够时，通过调整逻辑分区中的最小逻辑数量来动态改变系统空间大小。</p>
+
+<h3 id="toc_1">LVM中的术语</h3>
+
+<p>物理存储介质（The physical media）：这里指系统的存储设备：硬盘，如：/dev/hda1、/dev/sda等等，是存储系统最低层的存储单元。</p>
+
+<p>PV: 物理卷（physical volume）。物理卷就是指硬盘分区或从逻辑上与磁盘分区具有同样功能的设备(如RAID)，是LVM的基本存储逻辑块，但和基本的物理存储介质（如分区、磁盘等）比较，却包含有与LVM相关的管理参数。</p>
+
+<p>VG: 卷组（Volume Group）：LVM卷组类似于非LVM系统中的物理硬盘，其由物理卷组成。可以在卷组上创建一个或多个“LVM分区”（逻辑卷），LVM卷组由一个或多个物理卷组成。</p>
+
+<p>LV: 逻辑卷（logical volume）：LVM的逻辑卷类似于非LVM系统中的硬盘分区，在逻辑卷之上可以建立文件系统(比如/home或者/usr等)。</p>
+
+<p>PE: 每一个物理卷被划分为称为PE(Physical Extents)的基本单元，具有唯一编号的PE是可以被LVM寻址的最小单元。PE的大小是可配置的，默认为4MB。</p>
+
+<p>LE: 逻辑卷也被划分为被称为LE(Logical Extents) 的可被寻址的基本单位。在同一个卷组中，LE的大小和PE是相同的，并且一一对应。</p>
+
+<h3 id="toc_2">LVM工作原理</h3>
+
+<p>LVM工作原理是简单描述，通过将底层的物理磁盘抽象封装起来，然后以逻辑卷的方式呈现给文件系统；而我们传统的磁盘管理中，应用程序直接访问文件系统，文件系统直接建立在物理分区之上，对物理磁盘分区改变对上层应用有直接的影响。有了LVM之后， 在应用与磁盘之间增加了逻辑卷，对物理磁盘的上层应用是感知不到的。因此可以在应用运行的同时动态调整逻辑卷大小，提高磁盘管理的灵活性。<br/>
+<img src="media/14914442067467/lvm1.jpg" alt="LVM"/></p>
+
+<p><strong>1.将我们的物理硬盘格式化成PV</strong><br/><br/>
+上图，我们有3块磁盘，sda, sdb和sdc, 我们首先要将这3块磁盘格式化为PV，假设每块磁盘400m, 那么每块磁盘就被划分为100个PE最小逻辑单元， 因为PE默认值是4M。格式化磁盘为PV其实就是将磁盘划分为一个个的PE。</p>
+
+<p><strong>2.创建一个VG</strong><br/><br/>
+创建好PV之后，我们将不同的PV加入到VG中，图中的第二层。创建VG其实就是将若干PE封装成一个大的PE池，然后在这个之上划分LV。</p>
+
+<p><strong>3.基于VG创建LV</strong><br/><br/>
+PV以及VG创建好以后我们是不能够直接使用的， 需要创建LV，图上第3层。创建LV的过程其实，就是拿出不同数量的PE，这些PE肯能来自不同磁盘，图中蓝色块。<br/>
+文件系统就是建立在LV只是，LV的大小是PE整数倍，默认是4m, 16m, 32m等等。</p>
+
+<p><strong>4.在创建好的LV之上进行文件系统的格式化，然后挂载使用</strong><br/><br/>
+LV创建好后，就能对其进行文件系统格式化如ext3，并且挂载使用。当某一文件系分区空间不够时，我们个随时给LV添加PE数量，来改变分区大小，这个过程数据不会丢失，也不需要重启系统。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914441437461.html" title="Previous Post: Redis主键失效原理">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914442350852.html" title="Next Post: Git中的撤销操作">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

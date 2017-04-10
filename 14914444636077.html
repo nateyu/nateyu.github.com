@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         前端开步骤 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='html_css.html'>html/css</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">前端开步骤</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/5/25">2014/5/25</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <blockquote>
+<p>需要说明一下，这里所说的前端不包括设计，只有HTML和Javascript部分</p>
+
+<span id="more"></span><!-- more -->
+</blockquote>
+
+<h3 id="toc_0">编写语具有意性文档</h3>
+
+<ul>
+<li>根据内容编写HTML文档</li>
+<li>HTML进行W3C认证</li>
+</ul>
+
+<p><strong>根据内容编写语意性强的HTML文档</strong></p>
+
+<p>编写HTML文档是前端的第一步，可以使用记事本或者其他任何文本编辑器来编写。这里一再强调 <strong>语意性</strong> 是指什么意思呢？有两个层面，其一是我们文档组织结构要遵循内容旨意，就拿一个博客页面举例：一般博客页面不外乎标题、作者、内容和评论等等内容，因为有CSS排版组织HTML文档的时候你可以随意将内容放在标题前面，但是最好是按照文章的语意顺序标题、作者、内容的顺序来排列，这样一来万一CSS文件不能加载文章还可以作为普通文档来阅读，保证了它原有的可读性。其次是使用 <strong>语意标签</strong> , 具体来说是不要通篇使用&lt;div&gt;,或者&lt;p&gt;, 标题用h1..h6, 内容段落可以用&lt;div&gt;和&lt;section&gt;,文章可以用&lt;article&gt;， 类名更是要用具有语意性的命名，&lt;section class=&quot;art1&quot;&gt;， &lt;section class=&quot;left&quot;&gt; 这些都是很糟糕的命名。</p>
+
+<p><strong>HTML进行W3C验证</strong></p>
+
+<p>这是一个必不可少但是容易被人忽略的地方。<a href="http://validator.w3.org/">W3C HTML验证</a>的方式是根据HTML的DOCTYPE来验证文档中每个标签的使用是否正确合理。例如，当你在一个inline元素中放置一个block元素，浏览器是不会告诉你错误的，只是不会按照你的意图渲染而已，如果进行HTML验证就会立即发现这些隐藏的问题。</p>
+
+<p>需要指出的是，很多人省略第一行的DOCTYPE，这不是个好习惯。</p>
+
+<h3 id="toc_1">编写合格CSS</h3>
+
+<ul>
+<li>切割设计图，转换为CSS</li>
+<li>CSS进行W3C认证</li>
+</ul>
+
+<p><strong>切割设计图，转换为CSS</strong></p>
+
+<p>切图，写CSS这个没什么好说的，注意几点：</p>
+
+<ol>
+<li>转换效果的图片尽量放在一只图片上，通过CSS位置来选取。因为图片一般都是压缩过的，唯一能节省加载时间的方式是减少请求次数</li>
+<li>路径多用绝对路径</li>
+<li>根据css用途，多多写注释</li>
+<li>CSS也有性能消耗问题，使用前多多注意。例如：＊通配符，@import，过滤选择器，图片滤镜等等</li>
+</ol>
+
+<p><strong>CSS进行W3C认证</strong></p>
+
+<p>如果HTML验证一样，CSS验证也是有必要的。<a href="http://jigsaw.w3.org/css-validator/">验证地址</a></p>
+
+<p>验证完毕之后，基本不会有什么问题，页面就可以放心使用了。</p>
+
+<h3 id="toc_2">添加Javascript动态效果</h3>
+
+<ul>
+<li>编写Javascript动态效果</li>
+<li>用JSlint对Javascript检查验证</li>
+</ul>
+
+<p>给页面加的js最好放在文档的最后。每次写完js之后我都习惯将源文件放在<a href="http://www.jslint.com/">JSlint</a>检查一遍，然后按照他的错误和警告提示一步步改为通过即可。第一次使用jslint你会有一种崩溃的感觉，多改进几次你的代码会很稳健。</p>
+
+<h3 id="toc_3">浏览器兼容性检查</h3>
+
+<p>这个是上线前必须的步骤，现在大家都忽略IE6是一件很幸福的事情。你至少要检查IE7以上、Chrome、Safari、Firefox和Opera。IE上一般的兼容性检查，可以使用<a href="http://finalbuilds.com/iecollection.htm">IE Collection</a>, 它与原生IE有时会有些不一样， 要求更专业的话还是用原生IE来测试吧。</p>
+
+<h3 id="toc_4">发布</h3>
+
+<p>这些个过程之后，你写的网页就可以在各个环境下保持结果一致了。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914444332999.html" title="Previous Post: Rails的accepts_nested_attributes_for使用和原理">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914444932741.html" title="Next Post: 博客改版小结">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

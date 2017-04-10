@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Redis主键失效原理 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='other.html'>other</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Redis主键失效原理</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/8/24">2014/8/24</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>Redis中设置主键失效的命令有：EXPIRE、EXPIREAT、PEXPIRE、PEXPIREAT、SETEX和PSETEX。一旦key设置的过期时间到期<br/>
+就会删除该key-value。那么Redis是如何让key失效的呢？</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">主键失效的方法</h3>
+
+<ol>
+<li>被动方法：主键被访问时如果发现失效，就删除掉该主键。</li>
+<li>主动方法：周期性的每隔一段时间检查下redis中是否有失效的主键，并且选择部分失效的主键删除。</li>
+</ol>
+
+<h3 id="toc_1">主键与失效时间</h3>
+
+<p>当我们往redis中存入key-value时，key会添加到一个key的字典表dict中；同时如果该key有过期时间，那么过期时间添加到expires字典表中；<br/>
+这两个字典表可以理解为分别是key:value和key:timeout的映射。当我们使用SETEX和PSETEX时，先将key添加到dict中，然后将过期时间添加到expires中；而使用EXPIRE、EXPIREAT、PEXPIRE、PEXPIREAT时，先检查dict中是否存在该主键，如果有就将主键和过期时间添加到expires中。</p>
+
+<h3 id="toc_2">被动失效方法</h3>
+
+<p>被动失效方法是在任何访问数据操作前，如，GET、MGET、HGET、LRANGE等等，先检查主键是否失效，如果失效就删除它。具体做法如下：</p>
+
+<ul>
+<li>获取主键的过期时间</li>
+<li>如果过期时间不存在或者服务器正在加载数据，不删除</li>
+<li>如果不是Redis是作为salve运行，不删除主键(接收master命令来处理，而不是在被动方法中删除)，slave的主键失效是由master控制，只需要通知使用者该主键失效了</li>
+<li>对比当前时间与过期时间，确认主键确实已经失效了</li>
+<li>如果确实失效，那么首先更新关于失效主键的统计个数，然后将该主键失效的信息进行广播，最后将该主键从数据库中删除</li>
+</ul>
+
+<p>主键失效广播做两件事，1.如果redis开启了AOF就将删除失效主键的这一操作以 DEL Key 的标准命令格式记录下来；2. 如果redis存在slave, 就给所有的slave发送<br/>
+DEL Key的标准命令格式消息，告诉slave删除各自的失效主键。</p>
+
+<h3 id="toc_3">主动失效方法</h3>
+
+<p>仅仅通过被动失效远远不够，如果一个主键一直不被再次访问那么它将永远不会被删除，显示造成很大的空间浪费。Redis还提供主动失效的方法，简单说就是每隔一段时间<br/>
+（默认10秒）检查一下数据库，从中删除失效主键。在redis服务器启动时，创建一个时间事件用来检查失效主键，这个检查时间默认10秒执行一次，设置失效的主键并不是所有的全部检查而是随机选择一定数量（默认10个）进行检查并且删除，如果失效主键的超过抽检样本比例的25%，Redis会认为当前数据失效主键很多，所以还会进行下一轮的检查直到比例小于25%，然后转向下一个数据库。同样redis也不会一次检查所有的数据库，而是一次最多处理16个数据库。这样做的目的是为了减少清理失效主键带来的性能下降。</p>
+
+<p>主动检查主键的具体做法是：</p>
+
+<ul>
+<li>记录上次执行检查的数据库编号和上次执行检查的时间</li>
+<li>如果当前数据库数量小于16（默认值）则处理全部数据库，如果上次执行时间大于时间限制说明失效主键很多，同样处理全部数据库</li>
+<li>遍历每个redis数据库</li>
+<li>如果expires字典表大小为0，说明该数据库中没有设置失效时间的主键，直接检查下一数据库</li>
+<li>如果expires字典表不为空，但是其填充率不足1%，那么随机选择主键进行检查的代价会很高，所以这里直接检查下一数据库</li>
+<li>如果expires字典表中的个数不足以达到抽样个数，则选择全部key作为抽样样本</li>
+<li>随机获取一个设置了失效时间的主键，检查其是否已经失效</li>
+<li>发现该主键确实已经失效, 删除该主键; 在删除前广播该主键的失效信息, 与被动方法相同, 同时更新失效主键的统计个数。</li>
+<li>如果失效的主键数占抽样数的百分比大于25%，则继续上述过程</li>
+</ul>
+
+<p>主动失效的算法可以在redis.conf中选择，随机，LRU和ttl。</p>
+
+<h3 id="toc_4">主键失效对Redis性能的影响</h3>
+
+<p>上面我们可以看到，定期检查失效主键需要对数据库遍历和对expires字典遍历，虽然redis设置了检查的数量和cpu执行时间限制，但是当失效主键很多时还是会影响性能，特别是短期内的失效时间，因此在使用失效时间还是要注意的。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14914440715103.html" title="Previous Post: rails的中的MIME类型">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914442067467.html" title="Next Post: Linux磁盘管理LVM原理">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

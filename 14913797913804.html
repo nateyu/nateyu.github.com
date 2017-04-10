@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html lang="en">
+<!--<![endif]-->
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+         Javascript新接口 - 余瓞归的博客 
+    </title>
+    <meta name="description" content="ruby, rails, html, css, linux，javascript">
+    <link href="atom.xml" rel="alternate" title="余瓞归的博客" type="application/atom+xml">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600,800" rel="stylesheet" type="text/css">
+    <link rel="shortcut icon" href="asset/image/favicon.png">
+    <link rel="stylesheet" href="asset/css/base.css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha256-k2/8zcNbxVIh5mnQ52A0r3a6jAgMGxFJFE2707UxGCk= sha512-ZV9KawG2Legkwp3nAlxLIVFudTauWuBpC10uEafMHYL0Sarrz5A7G79kXh5+5+woxQ5HM559XX2UZjMJ36Wplg==" crossorigin="anonymous">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
+</head>
+<body>
+  <div class="container">
+ <div class="eleven columns content">
+	<p class="meta nav-header">
+		<a href="./archives.html">文章分类</a>
+		
+			> <a class='category' href='javascript.html'>javascript</a>
+		
+	  <a href="./">
+	    <i class="home fa fa-home"></i>
+	  </a>
+	</p>
+
+	<h1 class="title">Javascript新接口</h1>
+
+	<div class="meta">
+      <div class="date">
+          发表于：<time datetime="2014/10/26">2014/10/26</time> 
+      </div>
+  </div>
+
+	<div id="post">
+	  <p>随着Html5的到来，javascript也得到极大的发展，产生了很多新API，给web应用带来很大的便利。</p>
+
+<span id="more"></span><!-- more -->
+
+<h3 id="toc_0">requestAnimationFrame()</h3>
+
+<p>这个API是给我们来创建动画用，在html5之前我们创建动画基本是用setInterval()来循环执行。</p>
+
+<pre><code>(function(){
+  function updateAnimations(){
+  doAnimation1();
+  doAnimation2(); //其他动画
+}
+  setInterval(updateAnimations, 100);
+})();
+</code></pre>
+
+<p>这个设置动画最主要的问题是，显示器本身也需要刷新，设置时间间隔导致动画不平滑。</p>
+
+<p>requestAnimationFrame()只是告诉浏览器需要执行动画，至于多少时间执行由浏览器自己决定和优化。</p>
+
+<pre><code>function updateProgress(){
+        var div = document.getElementById(&quot;status&quot;);
+        div.style.width = (parseInt(div.style.width, 10) + 5) + &quot;%&quot;;
+        if (div.style.left != &quot;100%&quot;){
+            mozRequestAnimationFrame(updateProgress);
+} }
+mozRequestAnimationFrame(updateProgress);
+</code></pre>
+
+<p>moz前缀大家应该明白的吧，还有webkitRequestAnimationFrame与msRequestAnimationFrame。</p>
+
+<h3 id="toc_1">Page Visibility API</h3>
+
+<p>页面可见性api, 能够好的帮助我们了解用户是与当前页面互交。也就是说，如果当前页面别最小化，或者被其他程序遮挡住，那么我们可以将该页面的一些动画效果后后台服务可以暂停。这样大大节省开销。</p>
+
+<p>Page Visibility API由3个部分组成：<br/><br/>
+1.document.hidden:表示页面是否隐藏的布尔值。页面隐藏包括页面在后台标签页中或者浏览<br/>
+器最小化。<br/><br/>
+2.document.visibilityState, 表示下列 4 个可能状态的值:(1)页面在后台标签页中或浏览器最小化;(2)页面在前台标签页中;(3)实际的页面已经隐藏,但用户可以看到页面的预览(就像在 Windows 7 中,用户把鼠标移动到<br/>
+任务栏的图标上,就可以显示浏览器中当前页面的预览);(4)页面在屏幕外执行预渲染处理<br/><br/>
+3.visibilitychange 事件</p>
+
+<pre><code>if (document.hidden || document.msHidden || document.webKitHidden){ //页面隐藏了
+} else { //页面未隐藏
+}
+</code></pre>
+
+<h3 id="toc_2">Geolocation API</h3>
+
+<p>地理位置的api, 也就是浏览器能获得用户的地理位置经纬度。这个在很多见的到。是由navigator.geolocation对象来实现。</p>
+
+<h3 id="toc_3">File API</h3>
+
+<p>File API让web中也能访问计算机中的文件成为可能而不是简单使用&lt;input type=&quot;file&quot;&gt;字段。</p>
+
+<p>每个 File 对象都有下列只读属性。<br/><br/>
+1. name:本地文件系统中的文件名。<br/><br/>
+2. size:文件的字节大小。<br/><br/>
+3. type:字符串,文件的 MIME 类型。<br/><br/>
+4. lastModifiedDate:字符串,文件上一次被修改的时间   </p>
+
+<pre><code>var filesList = document.getElementById(&quot;files-list&quot;);
+EventUtil.addHandler(filesList, &quot;change&quot;, function(event){ 
+var files = EventUtil.getTarget(event).files,
+  i = 0,
+  len = files.length;
+while (i &lt; len){
+  console.log(files[i].name + &quot; (&quot; + files[i].type + &quot;, &quot; + files[i].size +&quot; bytes) &quot;);
+  i++; }
+});
+</code></pre>
+
+<h3 id="toc_4">Web 计时</h3>
+
+<p>主要是用来检查页面的性能，Web 计时机制的核心是 window.performance 对象。方法众多， 如：<br/><br/>
+1. redirectCount:页面加载前的重定向次数。<br/><br/>
+2. navigationStart:开始导航到当前页面的时间。   </p>
+
+<h3 id="toc_5">Web Workers</h3>
+
+<p>这个绝对是神器之一，js可以像其他语言一样，讲一些耗时间的操作使用线程、后台进程等放在后台进行。</p>
+
+	</div>
+
+	<div id="post-pagination" class="pagination">
+	  
+	    <p class="previous">
+	    	<a href="14913797880850.html" title="Previous Post: 字符编码">上一页</a>
+	    </p>
+		
+		
+			<p class="next">
+				<a href="14914439620917.html" title="Next Post: Javascript中类，名字空间和类的继承的实现">下一页</a>
+			</p>
+		
+	</div>
+
+	
+</div>
+
+         <div class="four columns sidebar">
+            <nav>
+                <a href="./">
+                    <img src="asset/image/logo.png" id="logo" alt="Blog logo" width="80" />
+                </a>
+                <h2>
+                    <a href="./living.html">生活</a> 
+                    <a href="./technology.html">技术</a>
+                </h2>
+                
+                <div id="bio">
+                    <p style="text-align:center">欢迎访问我的个人博客.</p>
+                    <p>
+                        我是余瓞归，一个懒惰挑剔的Ruby程序员。现居上海浦东，在一家电子商务公司从事系统架构工作。
+                    </p>
+                </div>
+                <div id="social">
+                    Follow me:
+                    <div id="stalker">
+                        <a title="nateyu on Github" href="https://github.com/nateyu">
+                            <i class="fa fa-github-square"></i>
+                        </a>
+                        <a title="Atom feed" id="atom" href="./atom.xml">
+                            <i class="fa fa-rss-square"></i>
+                        </a>
+                        <a title="Email" id="email" href="mailto: yudiegui@gmail.com">
+                            <i class="fa fa-envelope"></i>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>       <div class="footer">
+          <div class="disclaimer">
+              <p>
+                  本网站文章为个人所有，未经作者认许请勿转载
+              </p>
+              <p>
+                  © 余瓞归, 2017 &mdash; built with <a href="http://jekyllrb.com/">Jekyll</a> using <a href="https://github.com/swanson/lagom">Lagom theme</a>
+              </p>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script type="text/javascript">
+      var _hmt = _hmt || [];
+      (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?01179477135d9e37e18df55d2011d072";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+      })();
+    </script>
+  </body>
+</html>

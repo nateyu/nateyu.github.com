@@ -935,4 +935,4 @@ code, pre { font-family: Monaco,Menlo,Consolas,"Courier New",monospace; }
 .desc-content p { margin-bottom: 10px; }
 p.nav-header { height: 30px; }
 .posts .post-date {margin: .5em 0 0 0; }
-p img { max-width: 100%; max-height: auto; }
+p img { width: 100%; height: auto; }
